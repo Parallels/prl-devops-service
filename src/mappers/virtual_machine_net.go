@@ -5,8 +5,8 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func MapDtoVirtualMachineNetFromApi(m models.Net0) data_models.VirtualMachineNet0 {
-	mapped := data_models.VirtualMachineNet0{
+func MapDtoVirtualMachineNetFromApi(m models.Net) data_models.VirtualMachineNet {
+	mapped := data_models.VirtualMachineNet{
 		Enabled: m.Enabled,
 		Type:    m.Type,
 		MAC:     m.MAC,
@@ -16,8 +16,8 @@ func MapDtoVirtualMachineNetFromApi(m models.Net0) data_models.VirtualMachineNet
 	return mapped
 }
 
-func MapDtoVirtualMachineNetToApi(m data_models.VirtualMachineNet0) models.Net0 {
-	mapped := models.Net0{
+func MapDtoVirtualMachineNetToApi(m data_models.VirtualMachineNet) models.Net {
+	mapped := models.Net{
 		Enabled: m.Enabled,
 		Type:    m.Type,
 		MAC:     m.MAC,

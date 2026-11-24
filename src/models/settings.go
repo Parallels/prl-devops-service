@@ -45,21 +45,21 @@ type SettingSyncStateResponse struct {
 // hidden by a higher one (e.g. a host-local edit shadowed by the
 // orchestrator-managed value).
 type SettingEffectiveEntry struct {
-	Key             string  `json:"key"`
-	Type            string  `json:"type"`
-	DefaultValue    string  `json:"default_value"`
-	ValidValues     string  `json:"valid_values,omitempty"`
-	Description     string  `json:"description"`
-	AppliesTo       string  `json:"applies_to"`
-	RequiresRestart bool    `json:"requires_restart"`
-	ManagedValue    *string `json:"managed_value,omitempty"`
+	Key               string  `json:"key"`
+	Type              string  `json:"type"`
+	DefaultValue      string  `json:"default_value"`
+	ValidValues       string  `json:"valid_values,omitempty"`
+	Description       string  `json:"description"`
+	AppliesTo         string  `json:"applies_to"`
+	RequiresRestart   bool    `json:"requires_restart"`
+	ManagedValue      *string `json:"managed_value,omitempty"`
 	OrchestratorValue *string `json:"orchestrator_value,omitempty"`
-	HostsValue      *string `json:"hosts_value,omitempty"`
-	HostValue       *string `json:"host_value,omitempty"`
-	LocalValue      *string `json:"local_value,omitempty"`
-	Effective       string  `json:"effective"`
-	Source          string  `json:"source"`
-	ShadowedBy      string  `json:"shadowed_by,omitempty"`
+	HostsValue        *string `json:"hosts_value,omitempty"`
+	HostValue         *string `json:"host_value,omitempty"`
+	LocalValue        *string `json:"local_value,omitempty"`
+	Effective         string  `json:"effective"`
+	Source            string  `json:"source"`
+	ShadowedBy        string  `json:"shadowed_by,omitempty"`
 }
 
 // SettingsNodeInfo describes this node's settings posture for the UI.
@@ -72,26 +72,26 @@ type SettingsNodeInfo struct {
 // SettingsResponse is the full settings listing — definitions, stored
 // overrides, resolved effective view with sources, and drift (orchestrator).
 type SettingsResponse struct {
-	Definitions []SettingDefinitionResponse  `json:"definitions"`
-	Values      []SettingValueResponse       `json:"values"`
-	Effective   []SettingEffectiveEntry      `json:"effective"`
-	Sync        []SettingSyncStateResponse   `json:"sync,omitempty"`
-	Node        SettingsNodeInfo             `json:"node"`
+	Definitions []SettingDefinitionResponse `json:"definitions"`
+	Values      []SettingValueResponse      `json:"values"`
+	Effective   []SettingEffectiveEntry     `json:"effective"`
+	Sync        []SettingSyncStateResponse  `json:"sync,omitempty"`
+	Node        SettingsNodeInfo            `json:"node"`
 }
 
 // SettingsHostEffectiveResponse is the orchestrator's per-host resolved
 // bundle plus its sync status (remote env values are only visible on the
 // host itself — this view is the managed bundle the host will hold).
 type SettingsHostEffectiveResponse struct {
-	HostID       string                    `json:"host_id"`
-	HostName     string                    `json:"host_name,omitempty"`
-	Bundle       map[string]string         `json:"bundle"`
-	Effective    []SettingEffectiveEntry   `json:"effective"`
-	Revision     int64                     `json:"revision"`
-	ContentHash  string                    `json:"content_hash"`
-	Status       string                    `json:"status"`
-	LastError    string                    `json:"last_error,omitempty"`
-	LastSyncedAt string                    `json:"last_synced_at,omitempty"`
+	HostID       string                  `json:"host_id"`
+	HostName     string                  `json:"host_name,omitempty"`
+	Bundle       map[string]string       `json:"bundle"`
+	Effective    []SettingEffectiveEntry `json:"effective"`
+	Revision     int64                   `json:"revision"`
+	ContentHash  string                  `json:"content_hash"`
+	Status       string                  `json:"status"`
+	LastError    string                  `json:"last_error,omitempty"`
+	LastSyncedAt string                  `json:"last_synced_at,omitempty"`
 }
 
 // SettingValueRequest carries a single override write.

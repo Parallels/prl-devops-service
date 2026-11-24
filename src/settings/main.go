@@ -56,10 +56,10 @@ type Service struct {
 	st  *store
 
 	mu          sync.RWMutex
-	definitions map[string]models.SettingDefinition   // catalogued keys (upper)
-	values      map[string]map[string]string          // scope -> key -> value
-	managed     map[string]string                     // node_settings: orchestrator source
-	local       map[string]string                     // node_settings: local source
+	definitions map[string]models.SettingDefinition // catalogued keys (upper)
+	values      map[string]map[string]string        // scope -> key -> value
+	managed     map[string]string                   // node_settings: orchestrator source
+	local       map[string]string                   // node_settings: local source
 	meta        models.SettingMeta
 
 	isOrchestrator bool

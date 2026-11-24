@@ -65,9 +65,9 @@ const (
 
 // SettingDefinition.AppliesTo values — who may legitimately receive a key.
 const (
-	SettingAppliesToAll         = "all"
+	SettingAppliesToAll          = "all"
 	SettingAppliesToOrchestrator = "orchestrator"
-	SettingAppliesToHost        = "host"
+	SettingAppliesToHost         = "host"
 )
 
 // SettingDefinition is the catalog of configurable keys (the whitelist).
@@ -76,32 +76,32 @@ const (
 // the compiled-in list in the settings package, so it grows with releases.
 // Boot-critical and secret keys are permanently excluded from the catalog.
 type SettingDefinition struct {
-	Key             string           `json:"key" gorm:"primaryKey"`
-	Type            SettingValueType `json:"type"`
-	DefaultValue    string           `json:"default_value"`
+	Key          string           `json:"key" gorm:"primaryKey"`
+	Type         SettingValueType `json:"type"`
+	DefaultValue string           `json:"default_value"`
 	// ValidValues is a comma-separated allow-list for enum-like string keys
 	// ("" = free-form string). Enforced by the settings service validator on
 	// every write and on sync-apply.
-	ValidValues     string           `json:"valid_values"`
-	Description     string           `json:"description"`
-	AppliesTo       string           `json:"applies_to"`
-	RequiresRestart bool             `json:"requires_restart"`
-	CreatedAt       string           `json:"created_at"`
-	UpdatedAt       string           `json:"updated_at"`
-	*DbRecord      `json:"db_record" gorm:"-:all"`
+	ValidValues     string `json:"valid_values"`
+	Description     string `json:"description"`
+	AppliesTo       string `json:"applies_to"`
+	RequiresRestart bool   `json:"requires_restart"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
+	*DbRecord       `json:"db_record" gorm:"-:all"`
 }
 
 // SettingValue is one override row on the orchestrator: a (scope, key) pair.
 // UniqueIndex keeps the (scope,key) pair authoritative; deletes are hard
 // (removal = fall back to the next layer, no tombstones).
 type SettingValue struct {
-	ID        string      `json:"id" gorm:"primaryKey"`
-	Scope     string      `json:"scope" gorm:"index;uniqueIndex:ux_settingvalue_scope_key"`
-	Key       string      `json:"key" gorm:"uniqueIndex:ux_settingvalue_scope_key"`
-	Value     string      `json:"value"`
-	UpdatedBy string      `json:"updated_by"`
-	CreatedAt string      `json:"created_at"`
-	UpdatedAt string      `json:"updated_at"`
+	ID        string `json:"id" gorm:"primaryKey"`
+	Scope     string `json:"scope" gorm:"index;uniqueIndex:ux_settingvalue_scope_key"`
+	Key       string `json:"key" gorm:"uniqueIndex:ux_settingvalue_scope_key"`
+	Value     string `json:"value"`
+	UpdatedBy string `json:"updated_by"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 	*DbRecord `json:"db_record" gorm:"-:all"`
 }
 
@@ -110,13 +110,13 @@ type SettingValue struct {
 // acknowledged; a recompute of the desired bundle that no longer matches it
 // means the host is pending a sync.
 type SettingSyncState struct {
-	HostID      string `json:"host_id" gorm:"primaryKey"`
-	Revision    int64  `json:"revision"`
-	ContentHash string `json:"content_hash"`
-	Status      string `json:"status"`
-	LastError   string `json:"last_error"`
+	HostID       string `json:"host_id" gorm:"primaryKey"`
+	Revision     int64  `json:"revision"`
+	ContentHash  string `json:"content_hash"`
+	Status       string `json:"status"`
+	LastError    string `json:"last_error"`
 	LastSyncedAt string `json:"last_synced_at"`
-	*DbRecord   `json:"db_record" gorm:"-:all"`
+	*DbRecord    `json:"db_record" gorm:"-:all"`
 }
 
 // NodeSetting is the applied resolver layer on a node. Two sources coexist:

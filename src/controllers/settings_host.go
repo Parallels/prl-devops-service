@@ -116,12 +116,12 @@ func GetNodeSettingsHandler() restapi.ControllerHandler {
 // @Description	Edits this node's local layer (direct UI against a host). If the orchestrator also manages this key the managed value keeps winning (shadowed_by marks it); the local edit still survives future syncs.
 // @Tags			Settings
 // @Accept			json
-// @Produce			json
-// @Param			key		path	string					true	"Catalogued setting key"
+// @Produce		json
+// @Param			key		path	string						true	"Catalogued setting key"
 // @Param			value	body	models.SettingValueRequest	true	"Override value"
 // @Success		200
-// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
-// @Failure		401		{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/settings/node/{key} [put]
@@ -159,7 +159,7 @@ func SetNodeSettingHandler() restapi.ControllerHandler {
 // @Summary		Removes a node-local settings override
 // @Description	Drops this node's local override for the key (the managed layer, env or default takes over).
 // @Tags			Settings
-// @Produce			json
+// @Produce		json
 // @Param			key	path	string	true	"Catalogued setting key"
 // @Success		202
 // @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
@@ -201,8 +201,8 @@ func DeleteNodeSettingHandler() restapi.ControllerHandler {
 // @Description	Orchestrator-only push channel: replaces this node's managed layer wholesale (local layer untouched). Idempotent — a bundle whose hash already matches answers unchanged. Unknown keys, orchestrator-only keys and hash mismatches are rejected.
 // @Tags			Settings
 // @Accept			json
-// @Produce			json
-// @Param			bundle	body	models.SettingsSyncRequest	true	"Managed bundle"
+// @Produce		json
+// @Param			bundle	body		models.SettingsSyncRequest	true	"Managed bundle"
 // @Success		200		{object}	models.SettingsSyncResponse
 // @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.ApiErrorDiagnosticsResponse
