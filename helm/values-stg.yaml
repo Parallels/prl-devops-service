@@ -85,8 +85,8 @@ config:
   extraEnv: {}
 
 logs:
-  toFile: false
-  folder: ""
+  toFile: true
+  folder: /tmp
 
 ingress:
   enabled: false
