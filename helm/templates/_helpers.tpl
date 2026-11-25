@@ -64,3 +64,24 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Modules enabled in the container (ENABLED_MODULES).
+config.enabledModules wins when set; otherwise it is derived from config.mode.
+Only container-capable modules are listed: host, cache and reverse_proxy need
+Parallels Desktop on macOS and are stripped by the service on Linux.
+  catalog      -> api,cors,catalog (catalog_manager is dropped by the service on a pure catalog node)
+  orchestrator -> api,cors,orchestrator,catalog_manager
+  api/other    -> api,cors,catalog_manager
+*/}}
+{{- define "helm.enabledModules" -}}
+{{- if .Values.config.enabledModules -}}
+{{- .Values.config.enabledModules -}}
+{{- else if eq (lower (default "api" .Values.config.mode)) "catalog" -}}
+api,cors,catalog
+{{- else if eq (lower (default "api" .Values.config.mode)) "orchestrator" -}}
+api,cors,orchestrator,catalog_manager
+{{- else -}}
+api,cors,catalog_manager
+{{- end -}}
+{{- end }}

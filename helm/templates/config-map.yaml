@@ -16,6 +16,7 @@ data:
   {{- else }}
   MODE: "api"
   {{- end }}
+  ENABLED_MODULES: {{ include "helm.enabledModules" . | quote }}
   {{- if .Values.logs.toFile }}
   LOG_TO_FILE: "true"
   LOG_FILE_PATH: {{ .Values.logs.folder }}

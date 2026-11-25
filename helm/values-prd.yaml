@@ -72,7 +72,9 @@ config:
   apiPrefix: /api
   logLevel: DEBUG
   # Keep empty to derive from mode in template:
-  # catalog -> api,catalog, otherwise -> api,orchestrator
+  #   catalog -> api,cors,catalog
+  #   orchestrator -> api,cors,orchestrator,catalog_manager
+  #   otherwise -> api,cors,catalog_manager
   enabledModules: ""
   enableCors: "true"
   corsAllowedOrigins: "*"

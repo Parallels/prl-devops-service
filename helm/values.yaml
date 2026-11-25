@@ -84,6 +84,12 @@ logLevel: info
 
 config:
   mode: "api"
+  # Comma separated ENABLED_MODULES. Leave empty to derive from mode:
+  #   catalog      -> api,cors,catalog
+  #   orchestrator -> api,cors,orchestrator,catalog_manager
+  #   api          -> api,cors,catalog_manager
+  # host, cache and reverse_proxy are macOS-only and are ignored in containers.
+  enabledModules: ""
   disableCatalogCaching: false
 
 logs:
