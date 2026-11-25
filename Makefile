@@ -253,12 +253,12 @@ release-check: test lint generate-swagger generate-postman coverage security-che
 .PHONY: build-docs
 build-docs:
 	@echo "Building Documentation..."
-	@cd docs && bundle exec jekyll build ./docs
+	@cd docs && bundle exec jekyll build
 
 .PHONY: serve-docs
 serve-docs:
 	@echo "Serving Documentation..."
-	@cd docs && bundle exec jekyll serve ./docs
+	@cd docs && bundle exec jekyll serve
 
 .PHONY: build-helm-chart
 build-helm-chart:

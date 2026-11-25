@@ -28,6 +28,8 @@
       link: /docs/devops/restapi/authentication/
     - name: Api Reference
       link: /docs/devops/restapi/reference/
+    - name: Settings Reference
+      link: /docs/devops/restapi/reference/settings/
 - label: Catalog
   items:
     - name: Overview
@@ -40,6 +42,10 @@
   items:
     - name: Overview
       link: /docs/devops/orchestrator/overview/
+- label: Settings
+  items:
+    - name: Overview
+      link: /docs/devops/settings/overview/
 - label: Reverse Proxy
   hidden: true
   items:

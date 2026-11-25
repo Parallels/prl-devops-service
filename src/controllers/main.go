@@ -20,8 +20,7 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 
 	if config.Get().IsHost() {
 		registerCacheHandlers(ctx, version)
-		// Host-side settings surface: local edits for a directly-connected
-		// UI + the orchestrator bundle apply endpoint.
+		// Host-only orchestrator push channel (POST /settings/apply).
 		registerHostSettingsHandlers(ctx, version)
 	}
 	if config.Get().IsCatalog() {
@@ -36,6 +35,14 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	if config.Get().IsOrchestrator() {
 		registerOrchestratorHostsHandlers(ctx, version)
 		registerOrchestratorMachineCheckHandlers(ctx, version)
+		// Self console (definitions + values) — identical paths on hosts,
+		// where "self" means the local layer instead.
+		registerSettingsHandlers(ctx, version)
+		// Privileged console for configuring OTHER nodes.
+		registerOrchestratorSettingsHandlers(ctx, version)
+	} else if config.Get().IsHost() {
+		// Host running as a service (directly-connected UI): self console,
+		// no privileged routes — a host never manages other nodes.
 		registerSettingsHandlers(ctx, version)
 	}
 	registerSshHandlers(ctx, version)

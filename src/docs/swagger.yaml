@@ -171,38 +171,6 @@ definitions:
       memory:
         type: integer
     type: object
-  github_com_Parallels_prl-devops-service_models.Advanced:
-    properties:
-      Public SSH keys synchronization:
-        type: string
-      Rosetta Linux:
-        type: string
-      Share host location:
-        type: string
-      Show developer tools:
-        type: string
-      Swipe from edges:
-        type: string
-      VM hostname synchronization:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.CPU:
-    properties:
-      VT-x:
-        type: boolean
-      accl:
-        type: string
-      auto:
-        type: string
-      cpus:
-        type: integer
-      hotplug:
-        type: boolean
-      mode:
-        type: string
-      type:
-        type: string
-    type: object
   github_com_Parallels_prl-devops-service_models.CatalogManager:
     properties:
       active:
@@ -327,109 +295,6 @@ definitions:
       version:
         type: string
     type: object
-  github_com_Parallels_prl-devops-service_models.Cdrom:
-    description: CD/DVD drive device (wire keys cdrom0, cdrom1, ... on models.Hardware).
-    properties:
-      enabled:
-        type: boolean
-      image:
-        type: string
-      port:
-        type: string
-      state:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Coherence:
-    properties:
-      Auto-switch to full screen:
-        type: string
-      Disable aero:
-        type: string
-      Hide minimized windows:
-        type: string
-      Show Windows systray in Mac menu:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Expiration:
-    properties:
-      enabled:
-        type: boolean
-    type: object
-  github_com_Parallels_prl-devops-service_models.Fdd:
-    description: Floppy drive device (wire keys fdd0, fdd1, ... on models.Hardware).
-    properties:
-      enabled:
-        type: boolean
-      image:
-        type: string
-      port:
-        type: string
-      state:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Fullscreen:
-    properties:
-      Activate spaces on click:
-        type: string
-      Gamma control:
-        type: string
-      Optimize for games:
-        type: string
-      Scale view mode:
-        type: string
-      Use all displays:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.GuestSharedFolders:
-    properties:
-      Automount:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  github_com_Parallels_prl-devops-service_models.GuestTools:
-    properties:
-      state:
-        type: string
-      version:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Hardware:
-    description: >-
-      Hardware as reported by prlctl. Devices are dynamic keys placed directly on
-      this object next to the scalar groups: hdd0..n (see models.Hdd), cdrom0..n
-      (models.Cdrom), net0..n (models.Net), sound0..n (models.Sound), fdd0..n
-      (models.Fdd); unknown prlctl device types are passed through verbatim. VMs
-      whose disks were added with prlctl --device-add therefore expose hdd1, hdd2,
-      ... in addition to hdd0.
-    properties:
-      cpu:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CPU'
-      memory:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Memory'
-      memory_quota:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.MemoryQuota'
-      usb:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
-      video:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Video'
-    type: object
-  github_com_Parallels_prl-devops-service_models.Hdd:
-    description: Hard disk device (wire keys hdd0, hdd1, ... on models.Hardware).
-    properties:
-      enabled:
-        type: boolean
-      image:
-        type: string
-      online-compact:
-        type: string
-      port:
-        type: string
-      size:
-        type: string
-      type:
-        type: string
-    type: object
   github_com_Parallels_prl-devops-service_models.HostResourceItem:
     properties:
       disk_size:
@@ -499,20 +364,6 @@ definitions:
       id:
         type: string
     type: object
-  github_com_Parallels_prl-devops-service_models.Memory:
-    properties:
-      auto:
-        type: string
-      hotplug:
-        type: boolean
-      size:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.MemoryQuota:
-    properties:
-      auto:
-        type: string
-    type: object
   github_com_Parallels_prl-devops-service_models.MinimumSpecRequirement:
     properties:
       cpu:
@@ -521,187 +372,6 @@ definitions:
         type: integer
       memory:
         type: integer
-    type: object
-  github_com_Parallels_prl-devops-service_models.MiscellaneousSharing:
-    properties:
-      Shared clipboard:
-        type: string
-      Shared cloud:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Modality:
-    properties:
-      Capture mouse clicks:
-        type: string
-      Opacity (percentage):
-        type: integer
-      Show on all spaces:
-        type: string
-      Stay on top:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.MouseAndKeyboard:
-    properties:
-      Keyboard optimization mode:
-        type: string
-      Smart mouse optimized for games:
-        type: string
-      Smooth scrolling:
-        type: string
-      Sticky mouse:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Net:
-    description: Network adapter device (wire keys net0, net1, ... on models.Hardware).
-    properties:
-      card:
-        type: string
-      enabled:
-        type: boolean
-      mac:
-        type: string
-      type:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Optimization:
-    properties:
-      Adaptive hypervisor:
-        type: string
-      Auto compress virtual disks:
-        type: string
-      Disabled Windows logo:
-        type: string
-      Faster virtual machine:
-        type: string
-      Hypervisor type:
-        type: string
-      Longer battery life:
-        type: string
-      Nested virtualization:
-        type: string
-      PMU virtualization:
-        type: string
-      Resource quota:
-        type: string
-      Show battery status:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.ParallelsVM:
-    properties:
-      Advanced:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Advanced'
-      Allow select boot device:
-        type: string
-      BIOS type:
-        type: string
-      Boot order:
-        type: string
-      Coherence:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Coherence'
-      Description:
-        type: string
-      EFI Secure boot:
-        type: string
-      Expiration:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
-      External boot device:
-        type: string
-      Fullscreen:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Fullscreen'
-      Guest Shared Folders:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.GuestSharedFolders'
-      GuestTools:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.GuestTools'
-      Hardware:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Hardware'
-      Home:
-        type: string
-      Home path:
-        type: string
-      Host Shared Folders:
-        additionalProperties: true
-        type: object
-      Host defined sharing:
-        type: string
-      ID:
-        type: string
-      Miscellaneous Sharing:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.MiscellaneousSharing'
-      Modality:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Modality'
-      Mouse and Keyboard:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.MouseAndKeyboard'
-      Name:
-        type: string
-      Network:
-        $ref: '#/definitions/models.NetworkInformation'
-      OS:
-        type: string
-      Optimization:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Optimization'
-      Print Management:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.PrintManagement'
-      Restore Image:
-        type: string
-      SMBIOS settings:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.SMBIOSSettings'
-      Security:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Security'
-      Shared Applications:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.SharedApplications'
-      Shared Profile:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
-      Smart Guard:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
-      SmartMount:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.SmartMount'
-      Startup and Shutdown:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.StartupAndShutdown'
-      State:
-        type: string
-      Template:
-        type: string
-      Time Synchronization:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.TimeSynchronization'
-      Travel mode:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.TravelMode'
-      Type:
-        type: string
-      USB and Bluetooth:
-        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.USBAndBluetooth'
-      Uptime:
-        type: string
-      host:
-        type: string
-      host_external_ip_address:
-        type: string
-      host_id:
-        type: string
-      host_name:
-        type: string
-      host_state:
-        type: string
-      host_url:
-        type: string
-      internal_ip_address:
-        type: string
-      ip_status:
-        description: '"", pending, resolving, resolved, failed'
-        type: string
-      ip_status_detail:
-        description: human-readable detail for the status
-        type: string
-      user:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.PrintManagement:
-    properties:
-      Show host printer UI:
-        type: string
-      Synchronize default printer:
-        type: string
-      Synchronize with host printers:
-        type: string
     type: object
   github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse:
     properties:
@@ -814,122 +484,6 @@ definitions:
       key:
         type: string
     type: object
-  github_com_Parallels_prl-devops-service_models.SMBIOSSettings:
-    properties:
-      BIOS Version:
-        type: string
-      Board Manufacturer:
-        type: string
-      System serial number:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.Security:
-    properties:
-      Archived:
-        type: string
-      Configuration is locked:
-        type: string
-      Custom password protection:
-        type: string
-      Encrypted:
-        type: string
-      Packed:
-        type: string
-      Protected:
-        type: string
-      TPM enabled:
-        type: string
-      TPM type:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.SharedApplications:
-    properties:
-      Bounce dock icon when app flashes:
-        type: string
-      Guest-to-host apps sharing:
-        type: string
-      Host-to-guest apps sharing:
-        type: string
-      Show guest apps folder in Dock:
-        type: string
-      Show guest notifications:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  github_com_Parallels_prl-devops-service_models.SmartMount:
-    properties:
-      CD/DVD drives:
-        type: string
-      Network shares:
-        type: string
-      Removable drives:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  github_com_Parallels_prl-devops-service_models.Sound:
-    description: Sound card device (wire keys sound0, sound1, ... on models.Hardware).
-    properties:
-      enabled:
-        type: boolean
-      mixer:
-        type: string
-      output:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.StartupAndShutdown:
-    properties:
-      Autostart:
-        type: string
-      Autostart delay:
-        type: integer
-      Autostop:
-        type: string
-      On shutdown:
-        type: string
-      On window close:
-        type: string
-      Pause idle:
-        type: string
-      Startup view:
-        type: string
-      Undo disks:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.TimeSynchronization:
-    properties:
-      Interval (in seconds):
-        type: integer
-      Smart mode:
-        type: string
-      Timezone synchronization disabled:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  github_com_Parallels_prl-devops-service_models.TravelMode:
-    properties:
-      Enter condition:
-        type: string
-      Enter threshold:
-        type: integer
-      Quit condition:
-        type: string
-    type: object
-  github_com_Parallels_prl-devops-service_models.USBAndBluetooth:
-    properties:
-      Automatic sharing bluetooth:
-        type: string
-      Automatic sharing cameras:
-        type: string
-      Automatic sharing gamepads:
-        type: string
-      Automatic sharing smart cards:
-        type: string
-      Support USB 3.0:
-        type: string
-    type: object
   github_com_Parallels_prl-devops-service_models.UserConfigValueType:
     enum:
     - string
@@ -961,23 +515,19 @@ definitions:
       state:
         type: string
     type: object
-  github_com_Parallels_prl-devops-service_models.Video:
+  models.Advanced:
     properties:
-      3d-acceleration:
+      Public SSH keys synchronization:
         type: string
-      adapter-type:
+      Rosetta Linux:
         type: string
-      automatic-video-memory:
+      Share host location:
         type: string
-      high-resolution:
+      Show developer tools:
         type: string
-      high-resolution-in-guest:
+      Swipe from edges:
         type: string
-      native-scaling-in-guest:
-        type: string
-      size:
-        type: string
-      vertical-sync:
+      VM hostname synchronization:
         type: string
     type: object
   models.ApiCommonResponse:
@@ -1091,6 +641,23 @@ definitions:
           type: string
         type: array
       username:
+        type: string
+    type: object
+  models.CPU:
+    properties:
+      VT-x:
+        type: boolean
+      accl:
+        type: string
+      auto:
+        type: string
+      cpus:
+        type: integer
+      hotplug:
+        type: boolean
+      mode:
+        type: string
+      type:
         type: string
     type: object
   models.CatalogCacheConfig:
@@ -1208,6 +775,17 @@ definitions:
         items:
           $ref: '#/definitions/models.ApiUser'
         type: array
+    type: object
+  models.Coherence:
+    properties:
+      Auto-switch to full screen:
+        type: string
+      Disable aero:
+        type: string
+      Hide minimized windows:
+        type: string
+      Show Windows systray in Mac menu:
+        type: string
     type: object
   models.CreateCatalogVirtualMachineRequest:
     properties:
@@ -1543,6 +1121,51 @@ definitions:
         description: Human-readable uptime
         type: string
     type: object
+  models.Expiration:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  models.Fullscreen:
+    properties:
+      Activate spaces on click:
+        type: string
+      Gamma control:
+        type: string
+      Optimize for games:
+        type: string
+      Scale view mode:
+        type: string
+      Use all displays:
+        type: string
+    type: object
+  models.GuestSharedFolders:
+    properties:
+      Automount:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.GuestTools:
+    properties:
+      state:
+        type: string
+      version:
+        type: string
+    type: object
+  models.Hardware:
+    properties:
+      cpu:
+        $ref: '#/definitions/models.CPU'
+      memory:
+        $ref: '#/definitions/models.Memory'
+      memory_quota:
+        $ref: '#/definitions/models.MemoryQuota'
+      usb:
+        $ref: '#/definitions/models.Expiration'
+      video:
+        $ref: '#/definitions/models.Video'
+    type: object
   models.HostCatalogCacheItem:
     properties:
       architecture:
@@ -1802,6 +1425,49 @@ definitions:
       passed:
         type: boolean
     type: object
+  models.Memory:
+    properties:
+      auto:
+        type: string
+      hotplug:
+        type: boolean
+      size:
+        type: string
+    type: object
+  models.MemoryQuota:
+    properties:
+      auto:
+        type: string
+    type: object
+  models.MiscellaneousSharing:
+    properties:
+      Shared clipboard:
+        type: string
+      Shared cloud:
+        type: string
+    type: object
+  models.Modality:
+    properties:
+      Capture mouse clicks:
+        type: string
+      Opacity (percentage):
+        type: integer
+      Show on all spaces:
+        type: string
+      Stay on top:
+        type: string
+    type: object
+  models.MouseAndKeyboard:
+    properties:
+      Keyboard optimization mode:
+        type: string
+      Smart mouse optimized for games:
+        type: string
+      Smooth scrolling:
+        type: string
+      Sticky mouse:
+        type: string
+    type: object
   models.NetworkInformation:
     properties:
       Conditioned:
@@ -1871,6 +1537,29 @@ definitions:
     - OAuthEmailNotVerified
     - OAuthUserBlocked
     - UnknownError
+  models.Optimization:
+    properties:
+      Adaptive hypervisor:
+        type: string
+      Auto compress virtual disks:
+        type: string
+      Disabled Windows logo:
+        type: string
+      Faster virtual machine:
+        type: string
+      Hypervisor type:
+        type: string
+      Longer battery life:
+        type: string
+      Nested virtualization:
+        type: string
+      PMU virtualization:
+        type: string
+      Resource quota:
+        type: string
+      Show battery status:
+        type: string
+    type: object
   models.OrchestratorAuthentication:
     properties:
       api_key:
@@ -2070,6 +1759,123 @@ definitions:
       status:
         type: string
       uuid:
+        type: string
+    type: object
+  models.ParallelsVM:
+    properties:
+      Advanced:
+        $ref: '#/definitions/models.Advanced'
+      Allow select boot device:
+        type: string
+      BIOS type:
+        type: string
+      Boot order:
+        type: string
+      Coherence:
+        $ref: '#/definitions/models.Coherence'
+      Description:
+        type: string
+      EFI Secure boot:
+        type: string
+      Expiration:
+        $ref: '#/definitions/models.Expiration'
+      External boot device:
+        type: string
+      Fullscreen:
+        $ref: '#/definitions/models.Fullscreen'
+      Guest Shared Folders:
+        $ref: '#/definitions/models.GuestSharedFolders'
+      GuestTools:
+        $ref: '#/definitions/models.GuestTools'
+      Hardware:
+        $ref: '#/definitions/models.Hardware'
+      Home:
+        type: string
+      Home path:
+        type: string
+      Host Shared Folders:
+        additionalProperties: true
+        type: object
+      Host defined sharing:
+        type: string
+      ID:
+        type: string
+      Miscellaneous Sharing:
+        $ref: '#/definitions/models.MiscellaneousSharing'
+      Modality:
+        $ref: '#/definitions/models.Modality'
+      Mouse and Keyboard:
+        $ref: '#/definitions/models.MouseAndKeyboard'
+      Name:
+        type: string
+      Network:
+        $ref: '#/definitions/models.NetworkInformation'
+      OS:
+        type: string
+      Optimization:
+        $ref: '#/definitions/models.Optimization'
+      Print Management:
+        $ref: '#/definitions/models.PrintManagement'
+      Restore Image:
+        type: string
+      SMBIOS settings:
+        $ref: '#/definitions/models.SMBIOSSettings'
+      Security:
+        $ref: '#/definitions/models.Security'
+      Shared Applications:
+        $ref: '#/definitions/models.SharedApplications'
+      Shared Profile:
+        $ref: '#/definitions/models.Expiration'
+      Smart Guard:
+        $ref: '#/definitions/models.Expiration'
+      SmartMount:
+        $ref: '#/definitions/models.SmartMount'
+      Startup and Shutdown:
+        $ref: '#/definitions/models.StartupAndShutdown'
+      State:
+        type: string
+      Template:
+        type: string
+      Time Synchronization:
+        $ref: '#/definitions/models.TimeSynchronization'
+      Travel mode:
+        $ref: '#/definitions/models.TravelMode'
+      Type:
+        type: string
+      USB and Bluetooth:
+        $ref: '#/definitions/models.USBAndBluetooth'
+      Uptime:
+        type: string
+      host:
+        type: string
+      host_external_ip_address:
+        type: string
+      host_id:
+        type: string
+      host_name:
+        type: string
+      host_state:
+        type: string
+      host_url:
+        type: string
+      internal_ip_address:
+        type: string
+      ip_status:
+        description: '"", pending, resolving, resolved, failed'
+        type: string
+      ip_status_detail:
+        description: human-readable detail for the status
+        type: string
+      user:
+        type: string
+    type: object
+  models.PrintManagement:
+    properties:
+      Show host printer UI:
+        type: string
+      Synchronize default printer:
+        type: string
+      Synchronize with host printers:
         type: string
     type: object
   models.PullCatalogManifestRequest:
@@ -2337,6 +2143,34 @@ definitions:
           $ref: '#/definitions/models.ApiUser'
         type: array
     type: object
+  models.SMBIOSSettings:
+    properties:
+      BIOS Version:
+        type: string
+      Board Manufacturer:
+        type: string
+      System serial number:
+        type: string
+    type: object
+  models.Security:
+    properties:
+      Archived:
+        type: string
+      Configuration is locked:
+        type: string
+      Custom password protection:
+        type: string
+      Encrypted:
+        type: string
+      Packed:
+        type: string
+      Protected:
+        type: string
+      TPM enabled:
+        type: string
+      TPM type:
+        type: string
+    type: object
   models.ServiceHealthCheck:
     properties:
       error_message:
@@ -2346,6 +2180,242 @@ definitions:
       message:
         type: string
       name:
+        type: string
+    type: object
+  models.SettingDefinitionResponse:
+    properties:
+      applies_to:
+        type: string
+      default_value:
+        type: string
+      description:
+        type: string
+      key:
+        type: string
+      requires_restart:
+        type: boolean
+      type:
+        type: string
+      valid_values:
+        type: string
+    type: object
+  models.SettingEffectiveEntry:
+    properties:
+      applies_to:
+        type: string
+      default_value:
+        type: string
+      description:
+        type: string
+      effective:
+        type: string
+      host_value:
+        type: string
+      hosts_value:
+        type: string
+      key:
+        type: string
+      local_value:
+        type: string
+      managed_value:
+        type: string
+      orchestrator_value:
+        type: string
+      requires_restart:
+        type: boolean
+      shadowed_by:
+        type: string
+      source:
+        type: string
+      type:
+        type: string
+      valid_values:
+        type: string
+    type: object
+  models.SettingSyncStateResponse:
+    properties:
+      content_hash:
+        type: string
+      host_id:
+        type: string
+      host_name:
+        type: string
+      last_error:
+        type: string
+      last_synced_at:
+        type: string
+      revision:
+        type: integer
+      status:
+        type: string
+    type: object
+  models.SettingValueRequest:
+    properties:
+      value:
+        type: string
+    type: object
+  models.SettingValueResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      key:
+        type: string
+      scope:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
+        type: string
+      value:
+        type: string
+    type: object
+  models.SettingsDefinitionsResponse:
+    properties:
+      definitions:
+        items:
+          $ref: '#/definitions/models.SettingDefinitionResponse'
+        type: array
+    type: object
+  models.SettingsHostValuesResponse:
+    properties:
+      bundle:
+        additionalProperties:
+          type: string
+        type: object
+      content_hash:
+        type: string
+      effective:
+        items:
+          $ref: '#/definitions/models.SettingEffectiveEntry'
+        type: array
+      host_id:
+        type: string
+      host_name:
+        type: string
+      last_error:
+        type: string
+      last_synced_at:
+        type: string
+      revision:
+        type: integer
+      status:
+        type: string
+    type: object
+  models.SettingsNodeInfo:
+    properties:
+      managed:
+        type: boolean
+      managed_hash:
+        type: string
+      revision:
+        type: integer
+    type: object
+  models.SettingsSyncRequest:
+    properties:
+      hash:
+        type: string
+      revision:
+        type: integer
+      values:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  models.SettingsSyncResponse:
+    properties:
+      applied_count:
+        type: integer
+      applied_revision:
+        type: integer
+      hash:
+        type: string
+      unchanged:
+        type: boolean
+    type: object
+  models.SettingsSyncResult:
+    properties:
+      error:
+        type: string
+      host_id:
+        type: string
+      host_name:
+        type: string
+      revision:
+        type: integer
+      skipped:
+        type: boolean
+      status:
+        type: string
+      unchanged:
+        type: boolean
+    type: object
+  models.SettingsSyncTargetRequest:
+    properties:
+      target:
+        type: string
+    type: object
+  models.SettingsValuesResponse:
+    properties:
+      effective:
+        items:
+          $ref: '#/definitions/models.SettingEffectiveEntry'
+        type: array
+      node:
+        $ref: '#/definitions/models.SettingsNodeInfo'
+      sync:
+        items:
+          $ref: '#/definitions/models.SettingSyncStateResponse'
+        type: array
+      values:
+        items:
+          $ref: '#/definitions/models.SettingValueResponse'
+        type: array
+    type: object
+  models.SharedApplications:
+    properties:
+      Bounce dock icon when app flashes:
+        type: string
+      Guest-to-host apps sharing:
+        type: string
+      Host-to-guest apps sharing:
+        type: string
+      Show guest apps folder in Dock:
+        type: string
+      Show guest notifications:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.SmartMount:
+    properties:
+      CD/DVD drives:
+        type: string
+      Network shares:
+        type: string
+      Removable drives:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.StartupAndShutdown:
+    properties:
+      Autostart:
+        type: string
+      Autostart delay:
+        type: integer
+      Autostop:
+        type: string
+      On shutdown:
+        type: string
+      On window close:
+        type: string
+      Pause idle:
+        type: string
+      Startup view:
+        type: string
+      Undo disks:
         type: string
     type: object
   models.SystemReverseProxy:
@@ -2448,6 +2518,39 @@ definitions:
         $ref: '#/definitions/models.SystemUsageItem'
       total_vms:
         type: integer
+    type: object
+  models.TimeSynchronization:
+    properties:
+      Interval (in seconds):
+        type: integer
+      Smart mode:
+        type: string
+      Timezone synchronization disabled:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.TravelMode:
+    properties:
+      Enter condition:
+        type: string
+      Enter threshold:
+        type: integer
+      Quit condition:
+        type: string
+    type: object
+  models.USBAndBluetooth:
+    properties:
+      Automatic sharing bluetooth:
+        type: string
+      Automatic sharing cameras:
+        type: string
+      Automatic sharing gamepads:
+        type: string
+      Automatic sharing smart cards:
+        type: string
+      Support USB 3.0:
+        type: string
     type: object
   models.UninstallToolsRequest:
     properties:
@@ -2602,6 +2705,25 @@ definitions:
     properties:
       valid:
         type: boolean
+    type: object
+  models.Video:
+    properties:
+      3d-acceleration:
+        type: string
+      adapter-type:
+        type: string
+      automatic-video-memory:
+        type: string
+      high-resolution:
+        type: string
+      high-resolution-in-guest:
+        type: string
+      native-scaling-in-guest:
+        type: string
+      size:
+        type: string
+      vertical-sync:
+        type: string
     type: object
   models.VirtualMachineCatalogManifestPatch:
     properties:
@@ -5086,7 +5208,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+              $ref: '#/definitions/models.ParallelsVM'
             type: array
         "400":
           description: Bad Request
@@ -5178,7 +5300,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -5316,7 +5438,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -5871,7 +5993,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -6027,6 +6149,114 @@ paths:
       summary: Update a Host in the orchestrator
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{hostId}/settings/values:
+    get:
+      description: Shows exactly what the given host will hold after the next successful
+        sync (hosts-global plus per-host overrides, host wins) together with its drift
+        state.
+      parameters:
+      - description: Host ID
+        in: path
+        name: hostId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingsHostValuesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a host's resolved settings values
+      tags:
+      - Settings
+  /v1/orchestrator/hosts/{hostId}/settings/values/{key}:
+    delete:
+      description: Drops the per-host override (the hosts-global tier takes over).
+      parameters:
+      - description: Host ID
+        in: path
+        name: hostId
+        required: true
+        type: string
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes a per-host setting
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 'Override for a single host (wins over the hosts-global tier).
+        Applied by the sync engine on its next push. Body: {"value":"..."}'
+      parameters:
+      - description: Host ID
+        in: path
+        name: hostId
+        required: true
+        type: string
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Override value
+        in: body
+        name: value
+        required: true
+        schema:
+          $ref: '#/definitions/models.SettingValueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingValueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Sets a per-host setting
+      tags:
+      - Settings
   /v1/orchestrator/hosts/{id}:
     delete:
       description: This endpoint unregister a host from the orchestrator
@@ -6332,7 +6562,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+              $ref: '#/definitions/models.ParallelsVM'
             type: array
         "400":
           description: Bad Request
@@ -6439,7 +6669,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -6586,7 +6816,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -6988,7 +7218,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -7103,7 +7333,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -7176,7 +7406,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -7631,6 +7861,73 @@ paths:
       summary: Deploy and register an agent via SSH (asynchronous)
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/settings/values/{key}:
+    delete:
+      description: Drops the hosts-global override (hosts fall back to the catalog
+        default unless a per-host override exists).
+      parameters:
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes a hosts-global setting
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 'Value for ALL hosts (the tier every per-host override wins over).
+        Applied by the sync engine on its next push. Body: {"value":"..."}'
+      parameters:
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Override value
+        in: body
+        name: value
+        required: true
+        schema:
+          $ref: '#/definitions/models.SettingValueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingValueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Sets a hosts-global setting
+      tags:
+      - Settings
   /v1/orchestrator/machines:
     get:
       description: This endpoint returns orchestrator Virtual Machines
@@ -7641,7 +7938,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+              $ref: '#/definitions/models.ParallelsVM'
             type: array
         "400":
           description: Bad Request
@@ -7728,7 +8025,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -7854,7 +8151,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -8204,7 +8501,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
+            $ref: '#/definitions/models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -8410,6 +8707,111 @@ paths:
       summary: Get orchestrator resource overview
       tags:
       - Orchestrator
+  /v1/orchestrator/settings/sync:
+    post:
+      consumes:
+      - application/json
+      description: 'Immediately pushes the current managed bundles to all hosts or
+        to a single host ("host:<hostId>"). Idempotent: hosts already holding the
+        current bundle answer unchanged.'
+      parameters:
+      - description: Sync target
+        in: body
+        name: target
+        required: true
+        schema:
+          $ref: '#/definitions/models.SettingsSyncTargetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SettingsSyncResult'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Syncs settings to hosts
+      tags:
+      - Settings
+  /v1/orchestrator/settings/values/{key}:
+    delete:
+      description: Drops the orchestrator's own override (env, config file or catalog
+        default take over again).
+      parameters:
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes a setting from the orchestrator node
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 'The orchestrator''s own values — scope=orchestrator, the layer
+        that wins over its local layer and shadows env/file/default for the orchestrator
+        process. Applied live, no restart. Body: {"value":"..."}'
+      parameters:
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Override value
+        in: body
+        name: value
+        required: true
+        schema:
+          $ref: '#/definitions/models.SettingValueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingValueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Sets a setting on the orchestrator node
+      tags:
+      - Settings
   /v1/parallels_desktop/key:
     get:
       description: This endpoint returns Parallels Desktop active license
@@ -8798,6 +9200,165 @@ paths:
       summary: Restarts the reverse proxy
       tags:
       - ReverseProxy
+  /v1/settings/apply:
+    post:
+      consumes:
+      - application/json
+      description: 'Orchestrator-only push channel: replaces this node''s managed
+        layer wholesale (local layer untouched). Idempotent — a bundle whose hash
+        already matches answers unchanged. Unknown keys, orchestrator-only keys and
+        hash mismatches are rejected.'
+      parameters:
+      - description: Managed bundle
+        in: body
+        name: bundle
+        required: true
+        schema:
+          $ref: '#/definitions/models.SettingsSyncRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingsSyncResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Applies a managed settings bundle
+      tags:
+      - Settings
+  /v1/settings/definitions:
+    get:
+      description: 'Returns the curated definitions: type, default, allow-list, applies_to
+        and requires_restart per key. Static metadata — stored values and effective
+        answers live under /settings/values.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingsDefinitionsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets the settings catalog
+      tags:
+      - Settings
+  /v1/settings/values:
+    get:
+      description: 'Stored overrides plus this node''s effective view (value + source
+        + shadowing), drift rows and the node posture block. On the orchestrator:
+        every stored scope (orchestrator/hosts/host:<id>) with the orchestrator''s
+        own effective answers. On a host: the managed and local layers with the host''s
+        effective answers.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingsValuesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets the settings state
+      tags:
+      - Settings
+  /v1/settings/values/{key}:
+    delete:
+      description: 'Drops the host''s LOCAL override (the next layer answers: managed,
+        env, config file or catalog default). 404 when no local override was stored.'
+      parameters:
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes a local setting from this host
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 'Writes the host''s LOCAL layer — no scope in the path, it is always
+        "us". Orchestrator-managed keys keep winning (marked shadowed_by) and local
+        edits survive every sync. Orchestrator-owned values are written under /orchestrator/settings/values.
+        Body: {"value":"..."}'
+      parameters:
+      - description: Catalogued setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Override value
+        in: body
+        name: value
+        required: true
+        schema:
+          $ref: '#/definitions/models.SettingValueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SettingValueResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Sets a local setting on this host
+      tags:
+      - Settings
   /v1/ssh/execute:
     post:
       description: Executes a command on a remote host via SSH

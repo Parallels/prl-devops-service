@@ -175,10 +175,14 @@ func NewHttpListener() *HttpListener {
 	shutdown = make(chan bool, 1)
 
 	if globalHttpListener != nil {
-		globalHttpListener = nil
+		// Signal the previous listener BEFORE detaching it — dereferencing
+		// after the nil assignment panicked on every second call in-process
+		// (second boot in tests; harmless in production only because boot
+		// happens once per process).
 		if len(globalHttpListener.Servers) > 0 {
 			globalHttpListener.shutdownRequest <- true
 		}
+		globalHttpListener = nil
 	}
 
 	listener := HttpListener{

@@ -11,7 +11,7 @@ import (
 )
 
 // The settings service is uninitialized in unit context (no SQL handle) —
-// every handler must answer 503, never panic, and never write a body leak.
+// every handler must answer 503, never panic, and never leak a body.
 
 func doRequest(t *testing.T, handler func(http.ResponseWriter, *http.Request), method, target, body string) *httptest.ResponseRecorder {
 	t.Helper()
@@ -35,15 +35,19 @@ func TestSettingsHandlers_503WhenServiceInert(t *testing.T) {
 		body    string
 		handler func(http.ResponseWriter, *http.Request)
 	}{
-		{"orch listing", http.MethodGet, "/api/v1/settings", "", GetSettingsHandler()},
-		{"orch write", http.MethodPut, "/api/v1/settings/values/hosts/MAX_VMS_PER_HOST", `{"value":"1"}`, SetSettingValueHandler()},
-		{"orch delete", http.MethodDelete, "/api/v1/settings/values/hosts/MAX_VMS_PER_HOST", "", DeleteSettingValueHandler()},
-		{"orch host effective", http.MethodGet, "/api/v1/settings/hosts/h1/effective", "", GetHostEffectiveSettingsHandler()},
-		{"orch sync", http.MethodPost, "/api/v1/settings/sync", `{"target":"all"}`, SyncSettingsHandler()},
-		{"host listing", http.MethodGet, "/api/v1/settings/node", "", GetNodeSettingsHandler()},
-		{"host local write", http.MethodPut, "/api/v1/settings/node/MAX_VMS_PER_HOST", `{"value":"1"}`, SetNodeSettingHandler()},
-		{"host local delete", http.MethodDelete, "/api/v1/settings/node/MAX_VMS_PER_HOST", "", DeleteNodeSettingHandler()},
-		{"host apply", http.MethodPost, "/api/v1/settings/apply", `{"revision":1,"hash":"","values":{}}`, ApplySettingsBundleHandler()},
+		{"definitions", http.MethodGet, "/api/v1/settings/definitions", "", GetSettingsDefinitionsHandler()},
+		{"values listing", http.MethodGet, "/api/v1/settings/values", "", GetSettingsValuesHandler()},
+		{"local write", http.MethodPut, "/api/v1/settings/values/MAX_VMS_PER_HOST", `{"value":"1"}`, SetLocalSettingValueHandler()},
+		{"local delete", http.MethodDelete, "/api/v1/settings/values/MAX_VMS_PER_HOST", "", DeleteLocalSettingValueHandler()},
+		{"orchestrator self write", http.MethodPut, "/api/v1/orchestrator/settings/values/LOG_LEVEL", `{"value":"warn"}`, SetOrchestratorSettingValueHandler()},
+		{"orchestrator self delete", http.MethodDelete, "/api/v1/orchestrator/settings/values/LOG_LEVEL", "", DeleteOrchestratorSettingValueHandler()},
+		{"hosts global write", http.MethodPut, "/api/v1/orchestrator/hosts/settings/values/ENABLE_CANARY", `{"value":"true"}`, SetHostsGlobalSettingValueHandler()},
+		{"hosts global delete", http.MethodDelete, "/api/v1/orchestrator/hosts/settings/values/ENABLE_CANARY", "", DeleteHostsGlobalSettingValueHandler()},
+		{"host write", http.MethodPut, "/api/v1/orchestrator/hosts/h1/settings/values/ENABLE_CANARY", `{"value":"true"}`, SetHostSettingValueHandler()},
+		{"host delete", http.MethodDelete, "/api/v1/orchestrator/hosts/h1/settings/values/ENABLE_CANARY", "", DeleteHostSettingValueHandler()},
+		{"host values", http.MethodGet, "/api/v1/orchestrator/hosts/h1/settings/values", "", GetHostValuesHandler()},
+		{"sync", http.MethodPost, "/api/v1/orchestrator/settings/sync", `{"target":"all"}`, SyncSettingsHandler()},
+		{"apply", http.MethodPost, "/api/v1/settings/apply", `{"revision":1,"hash":"","values":{}}`, ApplySettingsBundleHandler()},
 	}
 	for _, tc := range cases {
 		rw := doRequest(t, tc.handler, tc.method, tc.target, tc.body)
@@ -56,7 +60,7 @@ func TestSettingsHandlers_503WhenServiceInert(t *testing.T) {
 // Sanity: request body mapping used by the write handlers behaves through
 // http_helper for the settings request shapes.
 func TestSettingValueRequestMapsBody(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPut, "/api/v1/settings/values/hosts/X", strings.NewReader(`{"value":" hello "}`))
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/settings/values/LOG_LEVEL", strings.NewReader(`{"value":" hello "}`))
 	var request models.SettingValueRequest
 	if err := http_helper.MapRequestBody(req, &request); err != nil {
 		t.Fatalf("body mapping failed: %v", err)
