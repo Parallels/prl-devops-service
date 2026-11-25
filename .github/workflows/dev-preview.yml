@@ -156,15 +156,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Assemble the already-pushed per-platform images into one tagged manifest.
+      # Do NOT use docker/build-push-action here: it has no `digests` input, so it
+      # silently rebuilt the image from the git context without the build args
+      # (VERSION/BUILD_ENV), producing a 0.0.0 stable image under the release tags.
       - name: Merge platform images into multi-arch manifest
-        uses: docker/build-push-action@v7
-        with:
-          push: true
-          provenance: false
-          keep-gitcontext: false
-          digests: ${{ needs.build-preview-amd64.outputs.digest }},${{ needs.build-preview-arm64.outputs.digest }}
-          tags: |
-            ${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.image_tag }}
+        env:
+          AMD64_DIGEST: ${{ needs.build-preview-amd64.outputs.digest }}
+          ARM64_DIGEST: ${{ needs.build-preview-arm64.outputs.digest }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            -t "${IMAGE_REPOSITORY}:${{ steps.tag.outputs.image_tag }}" \
+            "${IMAGE_REPOSITORY}@${AMD64_DIGEST}" \
+            "${IMAGE_REPOSITORY}@${ARM64_DIGEST}"
 
   deploy-stg:
     name: Deploy preview to staging

@@ -227,6 +227,11 @@ spec:
                   name: {{ include "helm.fullname" . }}
                   key: MODE
             {{- end }}
+            - name: ENABLED_MODULES
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: ENABLED_MODULES
             {{- if .Values.storage.databasePath }}
             - name: DATABASE_FOLDER
               valueFrom:

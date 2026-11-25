@@ -376,55 +376,65 @@ func GetSystemHealth() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		result := models.ApiHealthCheck{}
 
-		pdService := models.ServiceHealthCheck{
-			Healthy: true,
-			Name:    "Parallels Desktop Service",
-		}
+		// Non-macOS nodes (catalog/orchestrator containers) are initialised with
+		// InitCatalogServices, which does not create the Parallels, Packer, Vagrant
+		// or Git services. Only report on the services this node actually runs.
+		if provider.ParallelsDesktopService != nil {
+			pdService := models.ServiceHealthCheck{
+				Healthy: true,
+				Name:    "Parallels Desktop Service",
+			}
 
-		_, err := provider.ParallelsDesktopService.GetInfo()
-		if err != nil {
-			pdService.Healthy = false
-			pdService.ErrorMessage = err.Error()
+			if _, err := provider.ParallelsDesktopService.GetInfo(); err != nil {
+				pdService.Healthy = false
+				pdService.ErrorMessage = err.Error()
+			}
+			result.Services = append(result.Services, pdService)
 		}
-		result.Services = append(result.Services, pdService)
 
 		fullHealthCheck := http_helper.GetHttpRequestBoolValue(r, "full", false)
 		if fullHealthCheck {
-			packerService := models.ServiceHealthCheck{
-				Healthy: true,
-				Name:    "Packer Service",
+			if provider.PackerService != nil {
+				packerService := models.ServiceHealthCheck{
+					Healthy: true,
+					Name:    "Packer Service",
+				}
+				if version := provider.PackerService.Version(); version == "unknown" {
+					packerService.Healthy = false
+					packerService.ErrorMessage = "Packer Service not installed"
+				} else {
+					packerService.Message = version
+				}
+				result.Services = append(result.Services, packerService)
 			}
-			if version := provider.PackerService.Version(); version == "unknown" {
-				packerService.Healthy = false
-				packerService.ErrorMessage = "Packer Service not installed"
-			} else {
-				packerService.Message = version
-			}
-			result.Services = append(result.Services, packerService)
 
-			vagrantService := models.ServiceHealthCheck{
-				Healthy: true,
-				Name:    "Vagrant Service",
+			if provider.VagrantService != nil {
+				vagrantService := models.ServiceHealthCheck{
+					Healthy: true,
+					Name:    "Vagrant Service",
+				}
+				if version := provider.VagrantService.Version(); version == "unknown" {
+					vagrantService.Healthy = false
+					vagrantService.ErrorMessage = "Vagrant Service not installed"
+				} else {
+					vagrantService.Message = version
+				}
+				result.Services = append(result.Services, vagrantService)
 			}
-			if version := provider.VagrantService.Version(); version == "unknown" {
-				vagrantService.Healthy = false
-				vagrantService.ErrorMessage = "Packer Service not installed"
-			} else {
-				vagrantService.Message = version
-			}
-			result.Services = append(result.Services, vagrantService)
 
-			gitService := models.ServiceHealthCheck{
-				Healthy: true,
-				Name:    "Git Service",
+			if provider.GitService != nil {
+				gitService := models.ServiceHealthCheck{
+					Healthy: true,
+					Name:    "Git Service",
+				}
+				if version := provider.GitService.Version(); version == "unknown" {
+					gitService.Healthy = false
+					gitService.ErrorMessage = "Git Service not installed"
+				} else {
+					gitService.Message = version
+				}
+				result.Services = append(result.Services, gitService)
 			}
-			if version := provider.VagrantService.Version(); version == "unknown" {
-				gitService.Healthy = false
-				gitService.ErrorMessage = "Git Service not installed"
-			} else {
-				gitService.Message = version
-			}
-			result.Services = append(result.Services, gitService)
 		}
 
 		healthy, message := result.GetHealthStatus()
