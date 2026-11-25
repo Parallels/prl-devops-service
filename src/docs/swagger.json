@@ -3747,7 +3747,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                                "$ref": "#/definitions/models.ParallelsVM"
                             }
                         }
                     },
@@ -3906,7 +3906,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -3961,7 +3961,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4228,7 +4228,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -5367,6 +5367,279 @@
                 }
             }
         },
+        "/v1/orchestrator/hosts/settings/values/{key}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Value for ALL hosts (the tier every per-host override wins over). Applied by the sync engine on its next push. Body: {\"value\":\"...\"}",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Sets a hosts-global setting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Override value",
+                        "name": "value",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Drops the hosts-global override (hosts fall back to the catalog default unless a per-host override exists).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Removes a hosts-global setting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{hostId}/settings/values": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Shows exactly what the given host will hold after the next successful sync (hosts-global plus per-host overrides, host wins) together with its drift state.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Gets a host's resolved settings values",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "hostId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingsHostValuesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{hostId}/settings/values/{key}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Override for a single host (wins over the hosts-global tier). Applied by the sync engine on its next push. Body: {\"value\":\"...\"}",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Sets a per-host setting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "hostId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Override value",
+                        "name": "value",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Drops the per-host override (the hosts-global tier takes over).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Removes a per-host setting",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "hostId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts/{id}": {
             "get": {
                 "security": [
@@ -5863,7 +6136,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                                "$ref": "#/definitions/models.ParallelsVM"
                             }
                         }
                     },
@@ -6036,7 +6309,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -6092,7 +6365,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -6382,7 +6655,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -7019,7 +7292,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -7202,7 +7475,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -7843,7 +8116,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                                "$ref": "#/definitions/models.ParallelsVM"
                             }
                         }
                     },
@@ -8044,7 +8317,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -8299,7 +8572,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -8859,7 +9132,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                            "$ref": "#/definitions/models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -9065,6 +9338,168 @@
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/settings/sync": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Immediately pushes the current managed bundles to all hosts or to a single host (\"host:\u003chostId\u003e\"). Idempotent: hosts already holding the current bundle answer unchanged.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Syncs settings to hosts",
+                "parameters": [
+                    {
+                        "description": "Sync target",
+                        "name": "target",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingsSyncTargetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SettingsSyncResult"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/settings/values/{key}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The orchestrator's own values — scope=orchestrator, the layer that wins over its local layer and shadows env/file/default for the orchestrator process. Applied live, no restart. Body: {\"value\":\"...\"}",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Sets a setting on the orchestrator node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Override value",
+                        "name": "value",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Drops the orchestrator's own override (env, config file or catalog default take over again).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Removes a setting from the orchestrator node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     }
                 }
@@ -9703,6 +10138,245 @@
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/settings/apply": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Orchestrator-only push channel: replaces this node's managed layer wholesale (local layer untouched). Idempotent — a bundle whose hash already matches answers unchanged. Unknown keys, orchestrator-only keys and hash mismatches are rejected.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Applies a managed settings bundle",
+                "parameters": [
+                    {
+                        "description": "Managed bundle",
+                        "name": "bundle",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingsSyncRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingsSyncResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/settings/definitions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the curated definitions: type, default, allow-list, applies_to and requires_restart per key. Static metadata — stored values and effective answers live under /settings/values.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Gets the settings catalog",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingsDefinitionsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/settings/values": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Stored overrides plus this node's effective view (value + source + shadowing), drift rows and the node posture block. On the orchestrator: every stored scope (orchestrator/hosts/host:\u003cid\u003e) with the orchestrator's own effective answers. On a host: the managed and local layers with the host's effective answers.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Gets the settings state",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingsValuesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/settings/values/{key}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Writes the host's LOCAL layer — no scope in the path, it is always \"us\". Orchestrator-managed keys keep winning (marked shadowed_by) and local edits survive every sync. Orchestrator-owned values are written under /orchestrator/settings/values. Body: {\"value\":\"...\"}",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Sets a local setting on this host",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Override value",
+                        "name": "value",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SettingValueResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Drops the host's LOCAL override (the next layer answers: managed, env, config file or catalog default). 404 when no local override was stored.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Removes a local setting from this host",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalogued setting key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     }
                 }
@@ -10682,55 +11356,6 @@
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Advanced": {
-            "type": "object",
-            "properties": {
-                "Public SSH keys synchronization": {
-                    "type": "string"
-                },
-                "Rosetta Linux": {
-                    "type": "string"
-                },
-                "Share host location": {
-                    "type": "string"
-                },
-                "Show developer tools": {
-                    "type": "string"
-                },
-                "Swipe from edges": {
-                    "type": "string"
-                },
-                "VM hostname synchronization": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.CPU": {
-            "type": "object",
-            "properties": {
-                "VT-x": {
-                    "type": "boolean"
-                },
-                "accl": {
-                    "type": "string"
-                },
-                "auto": {
-                    "type": "string"
-                },
-                "cpus": {
-                    "type": "integer"
-                },
-                "hotplug": {
-                    "type": "boolean"
-                },
-                "mode": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_Parallels_prl-devops-service_models.CatalogManager": {
             "type": "object",
             "properties": {
@@ -10918,154 +11543,6 @@
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Cdrom": {
-            "description": "CD/DVD drive device (wire keys cdrom0, cdrom1, ... on models.Hardware).",
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Coherence": {
-            "type": "object",
-            "properties": {
-                "Auto-switch to full screen": {
-                    "type": "string"
-                },
-                "Disable aero": {
-                    "type": "string"
-                },
-                "Hide minimized windows": {
-                    "type": "string"
-                },
-                "Show Windows systray in Mac menu": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Expiration": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Fdd": {
-            "description": "Floppy drive device (wire keys fdd0, fdd1, ... on models.Hardware).",
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Fullscreen": {
-            "type": "object",
-            "properties": {
-                "Activate spaces on click": {
-                    "type": "string"
-                },
-                "Gamma control": {
-                    "type": "string"
-                },
-                "Optimize for games": {
-                    "type": "string"
-                },
-                "Scale view mode": {
-                    "type": "string"
-                },
-                "Use all displays": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.GuestSharedFolders": {
-            "type": "object",
-            "properties": {
-                "Automount": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.GuestTools": {
-            "type": "object",
-            "properties": {
-                "state": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Hardware": {
-            "description": "Hardware as reported by prlctl. Devices are dynamic keys placed directly on this object next to the scalar groups: hdd0..n (see models.Hdd), cdrom0..n (models.Cdrom), net0..n (models.Net), sound0..n (models.Sound), fdd0..n (models.Fdd); unknown prlctl device types are passed through verbatim. VMs whose disks were added with prlctl --device-add therefore expose hdd1, hdd2, ... in addition to hdd0.",
-            "type": "object",
-            "properties": {
-                "cpu": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CPU"
-                },
-                "memory": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Memory"
-                },
-                "memory_quota": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MemoryQuota"
-                },
-                "usb": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
-                },
-                "video": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Video"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Hdd": {
-            "description": "Hard disk device (wire keys hdd0, hdd1, ... on models.Hardware).",
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "online-compact": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_Parallels_prl-devops-service_models.HostResourceItem": {
             "type": "object",
             "properties": {
@@ -11172,28 +11649,6 @@
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Memory": {
-            "type": "object",
-            "properties": {
-                "auto": {
-                    "type": "string"
-                },
-                "hotplug": {
-                    "type": "boolean"
-                },
-                "size": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.MemoryQuota": {
-            "type": "object",
-            "properties": {
-                "auto": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_Parallels_prl-devops-service_models.MinimumSpecRequirement": {
             "type": "object",
             "properties": {
@@ -11205,279 +11660,6 @@
                 },
                 "memory": {
                     "type": "integer"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.MiscellaneousSharing": {
-            "type": "object",
-            "properties": {
-                "Shared clipboard": {
-                    "type": "string"
-                },
-                "Shared cloud": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Modality": {
-            "type": "object",
-            "properties": {
-                "Capture mouse clicks": {
-                    "type": "string"
-                },
-                "Opacity (percentage)": {
-                    "type": "integer"
-                },
-                "Show on all spaces": {
-                    "type": "string"
-                },
-                "Stay on top": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.MouseAndKeyboard": {
-            "type": "object",
-            "properties": {
-                "Keyboard optimization mode": {
-                    "type": "string"
-                },
-                "Smart mouse optimized for games": {
-                    "type": "string"
-                },
-                "Smooth scrolling": {
-                    "type": "string"
-                },
-                "Sticky mouse": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Net": {
-            "description": "Network adapter device (wire keys net0, net1, ... on models.Hardware).",
-            "type": "object",
-            "properties": {
-                "card": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "mac": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Optimization": {
-            "type": "object",
-            "properties": {
-                "Adaptive hypervisor": {
-                    "type": "string"
-                },
-                "Auto compress virtual disks": {
-                    "type": "string"
-                },
-                "Disabled Windows logo": {
-                    "type": "string"
-                },
-                "Faster virtual machine": {
-                    "type": "string"
-                },
-                "Hypervisor type": {
-                    "type": "string"
-                },
-                "Longer battery life": {
-                    "type": "string"
-                },
-                "Nested virtualization": {
-                    "type": "string"
-                },
-                "PMU virtualization": {
-                    "type": "string"
-                },
-                "Resource quota": {
-                    "type": "string"
-                },
-                "Show battery status": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.ParallelsVM": {
-            "type": "object",
-            "properties": {
-                "Advanced": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Advanced"
-                },
-                "Allow select boot device": {
-                    "type": "string"
-                },
-                "BIOS type": {
-                    "type": "string"
-                },
-                "Boot order": {
-                    "type": "string"
-                },
-                "Coherence": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Coherence"
-                },
-                "Description": {
-                    "type": "string"
-                },
-                "EFI Secure boot": {
-                    "type": "string"
-                },
-                "Expiration": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
-                },
-                "External boot device": {
-                    "type": "string"
-                },
-                "Fullscreen": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Fullscreen"
-                },
-                "Guest Shared Folders": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.GuestSharedFolders"
-                },
-                "GuestTools": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.GuestTools"
-                },
-                "Hardware": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Hardware"
-                },
-                "Home": {
-                    "type": "string"
-                },
-                "Home path": {
-                    "type": "string"
-                },
-                "Host Shared Folders": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "Host defined sharing": {
-                    "type": "string"
-                },
-                "ID": {
-                    "type": "string"
-                },
-                "Miscellaneous Sharing": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MiscellaneousSharing"
-                },
-                "Modality": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Modality"
-                },
-                "Mouse and Keyboard": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MouseAndKeyboard"
-                },
-                "Name": {
-                    "type": "string"
-                },
-                "Network": {
-                    "$ref": "#/definitions/models.NetworkInformation"
-                },
-                "OS": {
-                    "type": "string"
-                },
-                "Optimization": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Optimization"
-                },
-                "Print Management": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.PrintManagement"
-                },
-                "Restore Image": {
-                    "type": "string"
-                },
-                "SMBIOS settings": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.SMBIOSSettings"
-                },
-                "Security": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Security"
-                },
-                "Shared Applications": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.SharedApplications"
-                },
-                "Shared Profile": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
-                },
-                "Smart Guard": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
-                },
-                "SmartMount": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.SmartMount"
-                },
-                "Startup and Shutdown": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.StartupAndShutdown"
-                },
-                "State": {
-                    "type": "string"
-                },
-                "Template": {
-                    "type": "string"
-                },
-                "Time Synchronization": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.TimeSynchronization"
-                },
-                "Travel mode": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.TravelMode"
-                },
-                "Type": {
-                    "type": "string"
-                },
-                "USB and Bluetooth": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.USBAndBluetooth"
-                },
-                "Uptime": {
-                    "type": "string"
-                },
-                "host": {
-                    "type": "string"
-                },
-                "host_external_ip_address": {
-                    "type": "string"
-                },
-                "host_id": {
-                    "type": "string"
-                },
-                "host_name": {
-                    "type": "string"
-                },
-                "host_state": {
-                    "type": "string"
-                },
-                "host_url": {
-                    "type": "string"
-                },
-                "internal_ip_address": {
-                    "type": "string"
-                },
-                "ip_status": {
-                    "description": "\"\", pending, resolving, resolved, failed",
-                    "type": "string"
-                },
-                "ip_status_detail": {
-                    "description": "human-readable detail for the status",
-                    "type": "string"
-                },
-                "user": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.PrintManagement": {
-            "type": "object",
-            "properties": {
-                "Show host printer UI": {
-                    "type": "string"
-                },
-                "Synchronize default printer": {
-                    "type": "string"
-                },
-                "Synchronize with host printers": {
-                    "type": "string"
                 }
             }
         },
@@ -11651,184 +11833,6 @@
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.SMBIOSSettings": {
-            "type": "object",
-            "properties": {
-                "BIOS Version": {
-                    "type": "string"
-                },
-                "Board Manufacturer": {
-                    "type": "string"
-                },
-                "System serial number": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Security": {
-            "type": "object",
-            "properties": {
-                "Archived": {
-                    "type": "string"
-                },
-                "Configuration is locked": {
-                    "type": "string"
-                },
-                "Custom password protection": {
-                    "type": "string"
-                },
-                "Encrypted": {
-                    "type": "string"
-                },
-                "Packed": {
-                    "type": "string"
-                },
-                "Protected": {
-                    "type": "string"
-                },
-                "TPM enabled": {
-                    "type": "string"
-                },
-                "TPM type": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.SharedApplications": {
-            "type": "object",
-            "properties": {
-                "Bounce dock icon when app flashes": {
-                    "type": "string"
-                },
-                "Guest-to-host apps sharing": {
-                    "type": "string"
-                },
-                "Host-to-guest apps sharing": {
-                    "type": "string"
-                },
-                "Show guest apps folder in Dock": {
-                    "type": "string"
-                },
-                "Show guest notifications": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.SmartMount": {
-            "type": "object",
-            "properties": {
-                "CD/DVD drives": {
-                    "type": "string"
-                },
-                "Network shares": {
-                    "type": "string"
-                },
-                "Removable drives": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.Sound": {
-            "description": "Sound card device (wire keys sound0, sound1, ... on models.Hardware).",
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "mixer": {
-                    "type": "string"
-                },
-                "output": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.StartupAndShutdown": {
-            "type": "object",
-            "properties": {
-                "Autostart": {
-                    "type": "string"
-                },
-                "Autostart delay": {
-                    "type": "integer"
-                },
-                "Autostop": {
-                    "type": "string"
-                },
-                "On shutdown": {
-                    "type": "string"
-                },
-                "On window close": {
-                    "type": "string"
-                },
-                "Pause idle": {
-                    "type": "string"
-                },
-                "Startup view": {
-                    "type": "string"
-                },
-                "Undo disks": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.TimeSynchronization": {
-            "type": "object",
-            "properties": {
-                "Interval (in seconds)": {
-                    "type": "integer"
-                },
-                "Smart mode": {
-                    "type": "string"
-                },
-                "Timezone synchronization disabled": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.TravelMode": {
-            "type": "object",
-            "properties": {
-                "Enter condition": {
-                    "type": "string"
-                },
-                "Enter threshold": {
-                    "type": "integer"
-                },
-                "Quit condition": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_Parallels_prl-devops-service_models.USBAndBluetooth": {
-            "type": "object",
-            "properties": {
-                "Automatic sharing bluetooth": {
-                    "type": "string"
-                },
-                "Automatic sharing cameras": {
-                    "type": "string"
-                },
-                "Automatic sharing gamepads": {
-                    "type": "string"
-                },
-                "Automatic sharing smart cards": {
-                    "type": "string"
-                },
-                "Support USB 3.0": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_Parallels_prl-devops-service_models.UserConfigValueType": {
             "type": "string",
             "enum": [
@@ -11873,31 +11877,25 @@
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Video": {
+        "models.Advanced": {
             "type": "object",
             "properties": {
-                "3d-acceleration": {
+                "Public SSH keys synchronization": {
                     "type": "string"
                 },
-                "adapter-type": {
+                "Rosetta Linux": {
                     "type": "string"
                 },
-                "automatic-video-memory": {
+                "Share host location": {
                     "type": "string"
                 },
-                "high-resolution": {
+                "Show developer tools": {
                     "type": "string"
                 },
-                "high-resolution-in-guest": {
+                "Swipe from edges": {
                     "type": "string"
                 },
-                "native-scaling-in-guest": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "string"
-                },
-                "vertical-sync": {
+                "VM hostname synchronization": {
                     "type": "string"
                 }
             }
@@ -12074,6 +12072,32 @@
                 }
             }
         },
+        "models.CPU": {
+            "type": "object",
+            "properties": {
+                "VT-x": {
+                    "type": "boolean"
+                },
+                "accl": {
+                    "type": "string"
+                },
+                "auto": {
+                    "type": "string"
+                },
+                "cpus": {
+                    "type": "integer"
+                },
+                "hotplug": {
+                    "type": "boolean"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "models.CatalogCacheConfig": {
             "type": "object",
             "properties": {
@@ -12244,6 +12268,23 @@
                     "items": {
                         "$ref": "#/definitions/models.ApiUser"
                     }
+                }
+            }
+        },
+        "models.Coherence": {
+            "type": "object",
+            "properties": {
+                "Auto-switch to full screen": {
+                    "type": "string"
+                },
+                "Disable aero": {
+                    "type": "string"
+                },
+                "Hide minimized windows": {
+                    "type": "string"
+                },
+                "Show Windows systray in Mac menu": {
+                    "type": "string"
                 }
             }
         },
@@ -12726,6 +12767,76 @@
                 }
             }
         },
+        "models.Expiration": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.Fullscreen": {
+            "type": "object",
+            "properties": {
+                "Activate spaces on click": {
+                    "type": "string"
+                },
+                "Gamma control": {
+                    "type": "string"
+                },
+                "Optimize for games": {
+                    "type": "string"
+                },
+                "Scale view mode": {
+                    "type": "string"
+                },
+                "Use all displays": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.GuestSharedFolders": {
+            "type": "object",
+            "properties": {
+                "Automount": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.GuestTools": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Hardware": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "$ref": "#/definitions/models.CPU"
+                },
+                "memory": {
+                    "$ref": "#/definitions/models.Memory"
+                },
+                "memory_quota": {
+                    "$ref": "#/definitions/models.MemoryQuota"
+                },
+                "usb": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "video": {
+                    "$ref": "#/definitions/models.Video"
+                }
+            }
+        },
         "models.HostCatalogCacheItem": {
             "type": "object",
             "properties": {
@@ -13119,6 +13230,73 @@
                 }
             }
         },
+        "models.Memory": {
+            "type": "object",
+            "properties": {
+                "auto": {
+                    "type": "string"
+                },
+                "hotplug": {
+                    "type": "boolean"
+                },
+                "size": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MemoryQuota": {
+            "type": "object",
+            "properties": {
+                "auto": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MiscellaneousSharing": {
+            "type": "object",
+            "properties": {
+                "Shared clipboard": {
+                    "type": "string"
+                },
+                "Shared cloud": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Modality": {
+            "type": "object",
+            "properties": {
+                "Capture mouse clicks": {
+                    "type": "string"
+                },
+                "Opacity (percentage)": {
+                    "type": "integer"
+                },
+                "Show on all spaces": {
+                    "type": "string"
+                },
+                "Stay on top": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MouseAndKeyboard": {
+            "type": "object",
+            "properties": {
+                "Keyboard optimization mode": {
+                    "type": "string"
+                },
+                "Smart mouse optimized for games": {
+                    "type": "string"
+                },
+                "Smooth scrolling": {
+                    "type": "string"
+                },
+                "Sticky mouse": {
+                    "type": "string"
+                }
+            }
+        },
         "models.NetworkInformation": {
             "type": "object",
             "properties": {
@@ -13211,6 +13389,41 @@
                 "OAuthUserBlocked",
                 "UnknownError"
             ]
+        },
+        "models.Optimization": {
+            "type": "object",
+            "properties": {
+                "Adaptive hypervisor": {
+                    "type": "string"
+                },
+                "Auto compress virtual disks": {
+                    "type": "string"
+                },
+                "Disabled Windows logo": {
+                    "type": "string"
+                },
+                "Faster virtual machine": {
+                    "type": "string"
+                },
+                "Hypervisor type": {
+                    "type": "string"
+                },
+                "Longer battery life": {
+                    "type": "string"
+                },
+                "Nested virtualization": {
+                    "type": "string"
+                },
+                "PMU virtualization": {
+                    "type": "string"
+                },
+                "Resource quota": {
+                    "type": "string"
+                },
+                "Show battery status": {
+                    "type": "string"
+                }
+            }
         },
         "models.OrchestratorAuthentication": {
             "type": "object",
@@ -13504,6 +13717,181 @@
                     "type": "string"
                 },
                 "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ParallelsVM": {
+            "type": "object",
+            "properties": {
+                "Advanced": {
+                    "$ref": "#/definitions/models.Advanced"
+                },
+                "Allow select boot device": {
+                    "type": "string"
+                },
+                "BIOS type": {
+                    "type": "string"
+                },
+                "Boot order": {
+                    "type": "string"
+                },
+                "Coherence": {
+                    "$ref": "#/definitions/models.Coherence"
+                },
+                "Description": {
+                    "type": "string"
+                },
+                "EFI Secure boot": {
+                    "type": "string"
+                },
+                "Expiration": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "External boot device": {
+                    "type": "string"
+                },
+                "Fullscreen": {
+                    "$ref": "#/definitions/models.Fullscreen"
+                },
+                "Guest Shared Folders": {
+                    "$ref": "#/definitions/models.GuestSharedFolders"
+                },
+                "GuestTools": {
+                    "$ref": "#/definitions/models.GuestTools"
+                },
+                "Hardware": {
+                    "$ref": "#/definitions/models.Hardware"
+                },
+                "Home": {
+                    "type": "string"
+                },
+                "Home path": {
+                    "type": "string"
+                },
+                "Host Shared Folders": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "Host defined sharing": {
+                    "type": "string"
+                },
+                "ID": {
+                    "type": "string"
+                },
+                "Miscellaneous Sharing": {
+                    "$ref": "#/definitions/models.MiscellaneousSharing"
+                },
+                "Modality": {
+                    "$ref": "#/definitions/models.Modality"
+                },
+                "Mouse and Keyboard": {
+                    "$ref": "#/definitions/models.MouseAndKeyboard"
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "Network": {
+                    "$ref": "#/definitions/models.NetworkInformation"
+                },
+                "OS": {
+                    "type": "string"
+                },
+                "Optimization": {
+                    "$ref": "#/definitions/models.Optimization"
+                },
+                "Print Management": {
+                    "$ref": "#/definitions/models.PrintManagement"
+                },
+                "Restore Image": {
+                    "type": "string"
+                },
+                "SMBIOS settings": {
+                    "$ref": "#/definitions/models.SMBIOSSettings"
+                },
+                "Security": {
+                    "$ref": "#/definitions/models.Security"
+                },
+                "Shared Applications": {
+                    "$ref": "#/definitions/models.SharedApplications"
+                },
+                "Shared Profile": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "Smart Guard": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "SmartMount": {
+                    "$ref": "#/definitions/models.SmartMount"
+                },
+                "Startup and Shutdown": {
+                    "$ref": "#/definitions/models.StartupAndShutdown"
+                },
+                "State": {
+                    "type": "string"
+                },
+                "Template": {
+                    "type": "string"
+                },
+                "Time Synchronization": {
+                    "$ref": "#/definitions/models.TimeSynchronization"
+                },
+                "Travel mode": {
+                    "$ref": "#/definitions/models.TravelMode"
+                },
+                "Type": {
+                    "type": "string"
+                },
+                "USB and Bluetooth": {
+                    "$ref": "#/definitions/models.USBAndBluetooth"
+                },
+                "Uptime": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "host_external_ip_address": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "host_state": {
+                    "type": "string"
+                },
+                "host_url": {
+                    "type": "string"
+                },
+                "internal_ip_address": {
+                    "type": "string"
+                },
+                "ip_status": {
+                    "description": "\"\", pending, resolving, resolved, failed",
+                    "type": "string"
+                },
+                "ip_status_detail": {
+                    "description": "human-readable detail for the status",
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PrintManagement": {
+            "type": "object",
+            "properties": {
+                "Show host printer UI": {
+                    "type": "string"
+                },
+                "Synchronize default printer": {
+                    "type": "string"
+                },
+                "Synchronize with host printers": {
                     "type": "string"
                 }
             }
@@ -13911,6 +14299,49 @@
                 }
             }
         },
+        "models.SMBIOSSettings": {
+            "type": "object",
+            "properties": {
+                "BIOS Version": {
+                    "type": "string"
+                },
+                "Board Manufacturer": {
+                    "type": "string"
+                },
+                "System serial number": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Security": {
+            "type": "object",
+            "properties": {
+                "Archived": {
+                    "type": "string"
+                },
+                "Configuration is locked": {
+                    "type": "string"
+                },
+                "Custom password protection": {
+                    "type": "string"
+                },
+                "Encrypted": {
+                    "type": "string"
+                },
+                "Packed": {
+                    "type": "string"
+                },
+                "Protected": {
+                    "type": "string"
+                },
+                "TPM enabled": {
+                    "type": "string"
+                },
+                "TPM type": {
+                    "type": "string"
+                }
+            }
+        },
         "models.ServiceHealthCheck": {
             "type": "object",
             "properties": {
@@ -13924,6 +14355,368 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingDefinitionResponse": {
+            "type": "object",
+            "properties": {
+                "applies_to": {
+                    "type": "string"
+                },
+                "default_value": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "requires_restart": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "valid_values": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingEffectiveEntry": {
+            "type": "object",
+            "properties": {
+                "applies_to": {
+                    "type": "string"
+                },
+                "default_value": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "effective": {
+                    "type": "string"
+                },
+                "host_value": {
+                    "type": "string"
+                },
+                "hosts_value": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "local_value": {
+                    "type": "string"
+                },
+                "managed_value": {
+                    "type": "string"
+                },
+                "orchestrator_value": {
+                    "type": "string"
+                },
+                "requires_restart": {
+                    "type": "boolean"
+                },
+                "shadowed_by": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "valid_values": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingSyncStateResponse": {
+            "type": "object",
+            "properties": {
+                "content_hash": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "last_error": {
+                    "type": "string"
+                },
+                "last_synced_at": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingValueRequest": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingValueResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "updated_by": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingsDefinitionsResponse": {
+            "type": "object",
+            "properties": {
+                "definitions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SettingDefinitionResponse"
+                    }
+                }
+            }
+        },
+        "models.SettingsHostValuesResponse": {
+            "type": "object",
+            "properties": {
+                "bundle": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "content_hash": {
+                    "type": "string"
+                },
+                "effective": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SettingEffectiveEntry"
+                    }
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "last_error": {
+                    "type": "string"
+                },
+                "last_synced_at": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingsNodeInfo": {
+            "type": "object",
+            "properties": {
+                "managed": {
+                    "type": "boolean"
+                },
+                "managed_hash": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.SettingsSyncRequest": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
+                },
+                "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.SettingsSyncResponse": {
+            "type": "object",
+            "properties": {
+                "applied_count": {
+                    "type": "integer"
+                },
+                "applied_revision": {
+                    "type": "integer"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "unchanged": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.SettingsSyncResult": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
+                },
+                "skipped": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "unchanged": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.SettingsSyncTargetRequest": {
+            "type": "object",
+            "properties": {
+                "target": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SettingsValuesResponse": {
+            "type": "object",
+            "properties": {
+                "effective": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SettingEffectiveEntry"
+                    }
+                },
+                "node": {
+                    "$ref": "#/definitions/models.SettingsNodeInfo"
+                },
+                "sync": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SettingSyncStateResponse"
+                    }
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SettingValueResponse"
+                    }
+                }
+            }
+        },
+        "models.SharedApplications": {
+            "type": "object",
+            "properties": {
+                "Bounce dock icon when app flashes": {
+                    "type": "string"
+                },
+                "Guest-to-host apps sharing": {
+                    "type": "string"
+                },
+                "Host-to-guest apps sharing": {
+                    "type": "string"
+                },
+                "Show guest apps folder in Dock": {
+                    "type": "string"
+                },
+                "Show guest notifications": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.SmartMount": {
+            "type": "object",
+            "properties": {
+                "CD/DVD drives": {
+                    "type": "string"
+                },
+                "Network shares": {
+                    "type": "string"
+                },
+                "Removable drives": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.StartupAndShutdown": {
+            "type": "object",
+            "properties": {
+                "Autostart": {
+                    "type": "string"
+                },
+                "Autostart delay": {
+                    "type": "integer"
+                },
+                "Autostop": {
+                    "type": "string"
+                },
+                "On shutdown": {
+                    "type": "string"
+                },
+                "On window close": {
+                    "type": "string"
+                },
+                "Pause idle": {
+                    "type": "string"
+                },
+                "Startup view": {
+                    "type": "string"
+                },
+                "Undo disks": {
                     "type": "string"
                 }
             }
@@ -14068,6 +14861,57 @@
                 },
                 "total_vms": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.TimeSynchronization": {
+            "type": "object",
+            "properties": {
+                "Interval (in seconds)": {
+                    "type": "integer"
+                },
+                "Smart mode": {
+                    "type": "string"
+                },
+                "Timezone synchronization disabled": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.TravelMode": {
+            "type": "object",
+            "properties": {
+                "Enter condition": {
+                    "type": "string"
+                },
+                "Enter threshold": {
+                    "type": "integer"
+                },
+                "Quit condition": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.USBAndBluetooth": {
+            "type": "object",
+            "properties": {
+                "Automatic sharing bluetooth": {
+                    "type": "string"
+                },
+                "Automatic sharing cameras": {
+                    "type": "string"
+                },
+                "Automatic sharing gamepads": {
+                    "type": "string"
+                },
+                "Automatic sharing smart cards": {
+                    "type": "string"
+                },
+                "Support USB 3.0": {
+                    "type": "string"
                 }
             }
         },
@@ -14304,6 +15148,35 @@
             "properties": {
                 "valid": {
                     "type": "boolean"
+                }
+            }
+        },
+        "models.Video": {
+            "type": "object",
+            "properties": {
+                "3d-acceleration": {
+                    "type": "string"
+                },
+                "adapter-type": {
+                    "type": "string"
+                },
+                "automatic-video-memory": {
+                    "type": "string"
+                },
+                "high-resolution": {
+                    "type": "string"
+                },
+                "high-resolution-in-guest": {
+                    "type": "string"
+                },
+                "native-scaling-in-guest": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "vertical-sync": {
+                    "type": "string"
                 }
             }
         },

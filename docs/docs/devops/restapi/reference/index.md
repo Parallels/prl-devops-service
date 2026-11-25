@@ -993,6 +993,74 @@ categories:
           path: '/v1/auth/roles/{id}/claims/{claim_id} '
           description: This endpoint removes a claim from a role
           title: Removes a claim from a role
+    - name: Settings
+      path: settings
+      endpoints:
+        - anchor: /v1/settings/definitions-get
+          method: get
+          path: /v1/settings/definitions
+          description: 'Returns the curated definitions: type, default, allow-list, applies_to and requires_restart per key. Static metadata — stored values and effective answers live under /settings/values.'
+          title: Gets the settings catalog
+        - anchor: /v1/settings/values-get
+          method: get
+          path: /v1/settings/values
+          description: 'Stored overrides plus this node''s effective view (value + source + shadowing), drift rows and the node posture block. On the orchestrator: every stored scope (orchestrator/hosts/host:<id>) with the orchestrator''s own effective answers. On a host: the managed and local layers with the host''s effective answers.'
+          title: Gets the settings state
+        - anchor: /v1/settings/values/{key}-put
+          method: put
+          path: /v1/settings/values/{key}
+          description: 'Writes the host''s LOCAL layer — no scope in the path, it is always "us". Orchestrator-managed keys keep winning (marked shadowed_by) and local edits survive every sync. Orchestrator-owned values are written under /orchestrator/settings/values. Body: {"value":"..."}'
+          title: Sets a local setting on this host
+        - anchor: /v1/settings/values/{key}-delete
+          method: delete
+          path: /v1/settings/values/{key}
+          description: 'Drops the host''s LOCAL override (the next layer answers: managed, env, config file or catalog default). 404 when no local override was stored.'
+          title: Removes a local setting from this host
+        - anchor: /v1/orchestrator/settings/values/{key}-put
+          method: put
+          path: /v1/orchestrator/settings/values/{key}
+          description: 'The orchestrator''s own values — scope=orchestrator, the layer that wins over its local layer and shadows env/file/default for the orchestrator process. Applied live, no restart. Body: {"value":"..."}'
+          title: Sets a setting on the orchestrator node
+        - anchor: /v1/orchestrator/settings/values/{key}-delete
+          method: delete
+          path: /v1/orchestrator/settings/values/{key}
+          description: Drops the orchestrator's own override (env, config file or catalog default take over again).
+          title: Removes a setting from the orchestrator node
+        - anchor: /v1/orchestrator/hosts/settings/values/{key}-put
+          method: put
+          path: /v1/orchestrator/hosts/settings/values/{key}
+          description: 'Value for ALL hosts (the tier every per-host override wins over). Applied by the sync engine on its next push. Body: {"value":"..."}'
+          title: Sets a hosts-global setting
+        - anchor: /v1/orchestrator/hosts/settings/values/{key}-delete
+          method: delete
+          path: /v1/orchestrator/hosts/settings/values/{key}
+          description: Drops the hosts-global override (hosts fall back to the catalog default unless a per-host override exists).
+          title: Removes a hosts-global setting
+        - anchor: /v1/orchestrator/hosts/{hostId}/settings/values/{key}-put
+          method: put
+          path: /v1/orchestrator/hosts/{hostId}/settings/values/{key}
+          description: 'Override for a single host (wins over the hosts-global tier). Applied by the sync engine on its next push. Body: {"value":"..."}'
+          title: Sets a per-host setting
+        - anchor: /v1/orchestrator/hosts/{hostId}/settings/values/{key}-delete
+          method: delete
+          path: /v1/orchestrator/hosts/{hostId}/settings/values/{key}
+          description: Drops the per-host override (the hosts-global tier takes over).
+          title: Removes a per-host setting
+        - anchor: /v1/orchestrator/hosts/{hostId}/settings/values-get
+          method: get
+          path: /v1/orchestrator/hosts/{hostId}/settings/values
+          description: Shows exactly what the given host will hold after the next successful sync (hosts-global plus per-host overrides, host wins) together with its drift state.
+          title: Gets a host's resolved settings values
+        - anchor: /v1/orchestrator/settings/sync-post
+          method: post
+          path: /v1/orchestrator/settings/sync
+          description: 'Immediately pushes the current managed bundles to all hosts or to a single host ("host:<hostId>"). Idempotent: hosts already holding the current bundle answer unchanged.'
+          title: Syncs settings to hosts
+        - anchor: /v1/settings/apply-post
+          method: post
+          path: /v1/settings/apply
+          description: 'Orchestrator-only push channel: replaces this node''s managed layer wholesale (local layer untouched). Idempotent — a bundle whose hash already matches answers unchanged. Unknown keys, orchestrator-only keys and hash mismatches are rejected.'
+          title: Applies a managed settings bundle
     - name: SSH
       path: ssh
       endpoints:
@@ -16609,6 +16677,1074 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/roles/{id}/claims/{claim_id} "
               method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets the settings catalog
+      description: 'Returns the curated definitions: type, default, allow-list, applies_to and requires_restart per key. Static metadata — stored values and effective answers live under /settings/values.'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/settings/definitions
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingsDefinitionsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/settings/definitions' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/settings/definitions");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/settings/definitions"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets the settings state
+      description: 'Stored overrides plus this node''s effective view (value + source + shadowing), drift rows and the node posture block. On the orchestrator: every stored scope (orchestrator/hosts/host:<id>) with the orchestrator''s own effective answers. On a host: the managed and local layers with the host''s effective answers.'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/settings/values
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingsValuesResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/settings/values' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/settings/values");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/settings/values"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Sets a local setting on this host
+      description: 'Writes the host''s LOCAL layer — no scope in the path, it is always "us". Orchestrator-managed keys keep winning (marked shadowed_by) and local edits survive every sync. Orchestrator-owned values are written under /orchestrator/settings/values. Body: {"value":"..."}'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/settings/values/{key}
+      method: put
+      parameters:
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+        - name: value
+          required: false
+          type: body
+          value_type: object
+          description: Override value
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingValueResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/settings/values/{key}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/settings/values/{key}"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Removes a local setting from this host
+      description: 'Drops the host''s LOCAL override (the next layer answers: managed, env, config file or catalog default). 404 when no local override was stored.'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/settings/values/{key}
+      method: delete
+      parameters:
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+      response_blocks:
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/settings/values/{key}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/settings/values/{key}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Sets a setting on the orchestrator node
+      description: 'The orchestrator''s own values — scope=orchestrator, the layer that wins over its local layer and shadows env/file/default for the orchestrator process. Applied live, no restart. Body: {"value":"..."}'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/settings/values/{key}
+      method: put
+      parameters:
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+        - name: value
+          required: false
+          type: body
+          value_type: object
+          description: Override value
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingValueResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/settings/values/{key}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/settings/values/{key}"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Removes a setting from the orchestrator node
+      description: Drops the orchestrator's own override (env, config file or catalog default take over again).
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/settings/values/{key}
+      method: delete
+      parameters:
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+      response_blocks:
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/settings/values/{key}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/orchestrator/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/settings/values/{key}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Sets a hosts-global setting
+      description: 'Value for ALL hosts (the tier every per-host override wins over). Applied by the sync engine on its next push. Body: {"value":"..."}'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/hosts/settings/values/{key}
+      method: put
+      parameters:
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+        - name: value
+          required: false
+          type: body
+          value_type: object
+          description: Override value
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingValueResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/settings/values/{key}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/settings/values/{key}"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Removes a hosts-global setting
+      description: Drops the hosts-global override (hosts fall back to the catalog default unless a per-host override exists).
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/hosts/settings/values/{key}
+      method: delete
+      parameters:
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+      response_blocks:
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/settings/values/{key}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/orchestrator/hosts/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/settings/values/{key}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Sets a per-host setting
+      description: 'Override for a single host (wins over the hosts-global tier). Applied by the sync engine on its next push. Body: {"value":"..."}'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/hosts/{hostId}/settings/values/{key}
+      method: put
+      parameters:
+        - name: hostId
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+        - name: value
+          required: false
+          type: body
+          value_type: object
+          description: Override value
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingValueResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values/{key}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values/{key}"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Removes a per-host setting
+      description: Drops the per-host override (the hosts-global tier takes over).
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/hosts/{hostId}/settings/values/{key}
+      method: delete
+      parameters:
+        - name: hostId
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: key
+          required: true
+          type: path
+          value_type: string
+          description: Catalogued setting key
+      response_blocks:
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values/{key}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values/{key}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values/{key}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets a host's resolved settings values
+      description: Shows exactly what the given host will hold after the next successful sync (hosts-global plus per-host overrides, host wins) together with its drift state.
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/hosts/{hostId}/settings/values
+      method: get
+      parameters:
+        - name: hostId
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingsHostValuesResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{hostId}/settings/values"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Syncs settings to hosts
+      description: 'Immediately pushes the current managed bundles to all hosts or to a single host ("host:<hostId>"). Idempotent: hosts already holding the current bundle answer unchanged.'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/orchestrator/settings/sync
+      method: post
+      parameters:
+        - name: target
+          required: false
+          type: body
+          value_type: object
+          description: Sync target
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: '[]models.SettingsSyncResult'
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/settings/sync' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/settings/sync");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/settings/sync"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Applies a managed settings bundle
+      description: 'Orchestrator-only push channel: replaces this node''s managed layer wholesale (local layer untouched). Idempotent — a bundle whose hash already matches answers unchanged. Unknown keys, orchestrator-only keys and hash mismatches are rejected.'
+      requires_authorization: true
+      category: Settings
+      category_path: settings
+      path: /v1/settings/apply
+      method: post
+      parameters:
+        - name: bundle
+          required: false
+          type: body
+          value_type: object
+          description: Managed bundle
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.SettingsSyncResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/settings/apply' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/settings/apply");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/settings/apply"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {

@@ -69,20 +69,25 @@ type SettingsNodeInfo struct {
 	ManagedHash string `json:"managed_hash,omitempty"`
 }
 
-// SettingsResponse is the full settings listing — definitions, stored
-// overrides, resolved effective view with sources, and drift (orchestrator).
-type SettingsResponse struct {
+// SettingsDefinitionsResponse is the catalog listing endpoint payload.
+type SettingsDefinitionsResponse struct {
 	Definitions []SettingDefinitionResponse `json:"definitions"`
-	Values      []SettingValueResponse      `json:"values"`
-	Effective   []SettingEffectiveEntry     `json:"effective"`
-	Sync        []SettingSyncStateResponse  `json:"sync,omitempty"`
-	Node        SettingsNodeInfo            `json:"node"`
 }
 
-// SettingsHostEffectiveResponse is the orchestrator's per-host resolved
-// bundle plus its sync status (remote env values are only visible on the
-// host itself — this view is the managed bundle the host will hold).
-type SettingsHostEffectiveResponse struct {
+// SettingsValuesResponse is the state listing endpoint payload: stored
+// overrides, this node's resolved effective view, drift rows (orchestrator)
+// and the node posture block.
+type SettingsValuesResponse struct {
+	Values    []SettingValueResponse     `json:"values"`
+	Effective []SettingEffectiveEntry    `json:"effective"`
+	Sync      []SettingSyncStateResponse `json:"sync,omitempty"`
+	Node      SettingsNodeInfo           `json:"node"`
+}
+
+// SettingsHostValuesResponse is the orchestrator's per-host resolved bundle
+// plus its sync status (remote env values are only visible on the host
+// itself — this view is the managed bundle the host will hold).
+type SettingsHostValuesResponse struct {
 	HostID       string                  `json:"host_id"`
 	HostName     string                  `json:"host_name,omitempty"`
 	Bundle       map[string]string       `json:"bundle"`
