@@ -46,6 +46,9 @@ livereload: true
 
 sass:
   style: compressed
+  quiet_deps: true
+  load_paths:
+    - node_modules
 
 defaults:
   - scope:

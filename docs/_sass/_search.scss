@@ -1,3 +1,4 @@
+@use "sass:color";
 $search-primary: #3273dc !default;
 $search-text: #1f2937 !default;
 $search-muted: #6b7280 !default;
@@ -34,7 +35,7 @@ $search-control-bg: #f3f4f6 !default;
 
   &.is-active {
     border-color: $search-primary;
-    box-shadow: 0 0 0 3px rgba($search-primary, 0.15);
+    box-shadow: 0 0 0 3px color.change($search-primary, $alpha: 0.15);
 
     .search-shortcut {
       background: $search-primary;

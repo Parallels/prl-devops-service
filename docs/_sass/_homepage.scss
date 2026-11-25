@@ -1,3 +1,5 @@
+@use "sass:color";
+@use "variables" as *;
 .home-page {
   width: 100%;
   display: flex;
@@ -295,7 +297,7 @@ $card-border: #e8e8e8;
 
     &:hover {
       box-shadow: $card-shadow-hover;
-      border-color: darken($card-border, 4%);
+      border-color: color.adjust($card-border, $lightness: -4%);
     }
   }
 }

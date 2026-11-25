@@ -4,7 +4,7 @@
 {% endif %}
 
 {% assign sideContent = page.side_toc | default: false %}
-<html dir="{{ site.direction | default: 'ltr' }}" lang="{{ site.lang | default: 'en' }}" {% if site.fixed_navbar %}class="has-navbar-fixed-{{ site.fixed_navbar }}" {% endif %}>
+<html data-theme="light" dir="{{ site.direction | default: 'ltr' }}" lang="{{ site.lang | default: 'en' }}" {% if site.fixed_navbar %}class="has-navbar-fixed-{{ site.fixed_navbar }}" {% endif %}>
 {% include head.html %}
 
 <body class="{% if page.layout == 'page' %}page-layout{% endif %}{% if page.layout == 'api' %} api-layout{% endif %}{% if page.sticky_footer %} has-sticky-footer{% endif %}">

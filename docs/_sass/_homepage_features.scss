@@ -1,3 +1,5 @@
+@use "sass:color";
+@use "variables" as *;
 .features-section {
   display: flex;
   justify-content: center;
@@ -141,7 +143,7 @@
   }
 
   &:hover {
-    border-color: darken($border-color, 8%);
+    border-color: color.adjust($border-color, $lightness: -8%);
     transform: translateY(-6px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
     cursor: pointer !important;

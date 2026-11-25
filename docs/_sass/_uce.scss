@@ -1,3 +1,5 @@
+@use "sass:color";
+@use "variables" as *;
 // Use Case Engine — Styles (Phase 2)
 // Covers: progress bar, choice cards, checkpoint panels
 
@@ -277,7 +279,7 @@ $uce-radius-sm: 8px;
   justify-content: space-between;
   padding: 16px 24px;
   background: $uce-primary-light;
-  border-bottom: 1px solid rgba($uce-primary, 0.1);
+  border-bottom: 1px solid color.change($uce-primary, $alpha: 0.1);
 }
 
 .uce-intro-title-row {
@@ -2447,7 +2449,7 @@ $uce-resources-accent-light: rgba(16, 185, 129, 0.12);
 }
 
 .uce-resource-item + .uce-resource-item {
-  border-top: 1px solid rgba($uce-resources-accent, 0.15);
+  border-top: 1px solid color.change($uce-resources-accent, $alpha: 0.15);
 }
 
 .uce-resource-title {

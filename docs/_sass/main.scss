@@ -1,51 +1,41 @@
 @charset "utf-8";
-@import url('https://fonts.googleapis.com/css?family=Montserrat');
 
-$family-sans-serif: 'Open Sans';
-$primary: #A7AEB5 !default;
-
-$tabs-link-active-color: $primary;
-$tabs-link-active-border-bottom-color: $primary;
-
-$modal-content-width: 800px;
-$dark: #363636;
-
-@import "../node_modules/bulma/bulma.sass";
-$hero-darken: $dark !default;
-
-
-
-@import "../node_modules/bulma-block-list/src/block-list.scss";
-@import "_variables";
-@import "layout";
-@import "_hero";
-@import "_syntax";
-@import "showcase";
-@import "_api";
-@import "tabs";
-@import "buttons";
-@import "notifications";
-@import "menu-bar";
-@import "page-toc";
-@import "navbar";
-@import "search";
-@import "footer";
-@import "blogs";
-@import "_homepage";
-@import "_callout";
-@import "_header";
-@import "_homepage_steps";
-@import "_homepage_features";
-@import "_homepage_download";
-@import "_discord";
-@import "footer";
-@import "_ui";
-@import "_walkthrough";
-@import "_uce";
-@import "_usecases-index";
-@import "cookie-consent";
-
-
+// Bulma 1.x configuration
+@use "bulma/sass" with (
+  $family-primary: 'Open Sans',
+  $primary: #A7AEB5,
+  $dark: #363636,
+  $tabs-link-active-color: #A7AEB5,
+  $tabs-link-active-border-bottom-color: #A7AEB5,
+  $modal-content-width: 800px
+);
+@use "bulma-block-list/src/block-list";
+@use "layout";
+@use "_hero";
+@use "_syntax";
+@use "showcase";
+@use "_api";
+@use "tabs";
+@use "buttons";
+@use "notifications";
+@use "menu-bar";
+@use "page-toc";
+@use "navbar";
+@use "search";
+@use "footer";
+@use "blogs";
+@use "_homepage";
+@use "_callout";
+@use "_header";
+@use "_homepage_steps";
+@use "_homepage_features";
+@use "_homepage_download";
+@use "_discord";
+@use "_ui";
+@use "_walkthrough";
+@use "_uce";
+@use "_usecases-index";
+@use "cookie-consent";
 
 .index_release {
   h1 {

@@ -1,3 +1,5 @@
+@use "sass:color";
+@use "variables" as *;
 // Hero accent color
 $hero-accent-color: #e0392b; //rgba(224, 57, 43, 1);
 $hero-pill-bg: rgb(239 246 255 /1);
@@ -290,8 +292,8 @@ $hero-btn-hover-bg: #f5f5f5;
         border: 1.5px solid $font-base-color;
 
         &:hover {
-          background-color: lighten($font-base-color, 15%);
-          border-color: lighten($font-base-color, 15%);
+          background-color: color.adjust($font-base-color, $lightness: 15%);
+          border-color: color.adjust($font-base-color, $lightness: 15%);
           color: $white;
           text-decoration: none;
         }
@@ -303,8 +305,8 @@ $hero-btn-hover-bg: #f5f5f5;
         border: 1.5px solid $hero-accent-color;
 
         &:hover {
-          background-color: darken($hero-accent-color, 8%);
-          border-color: darken($hero-accent-color, 8%);
+          background-color: color.adjust($hero-accent-color, $lightness: -8%);
+          border-color: color.adjust($hero-accent-color, $lightness: -8%);
           color: $white;
           text-decoration: none;
         }

@@ -1,3 +1,5 @@
+@use "sass:color";
+@use "variables" as *;
 // Download section
 $download-bg: #f8f9fb;
 $card-radius: 16px;
@@ -97,7 +99,7 @@ $btn-secondary-bg: #ffffff;
 
     &:hover {
       box-shadow: $card-shadow-hover;
-      border-color: darken($card-border, 4%);
+      border-color: color.adjust($card-border, $lightness: -4%);
     }
   }
 }
@@ -324,7 +326,7 @@ $btn-secondary-bg: #ffffff;
 
     &:hover {
       background-color: #f5f6f8;
-      border-color: darken($card-border, 8%);
+      border-color: color.adjust($card-border, $lightness: -8%);
     }
   }
 }
