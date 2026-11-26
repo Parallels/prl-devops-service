@@ -54,7 +54,7 @@ jobs:
           bundle exec jekyll build
         working-directory: ./docs            
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/_site
           name: github-pages
