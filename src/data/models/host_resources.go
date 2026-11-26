@@ -24,13 +24,20 @@ type HostResources struct {
 	// MaxVmsPerHost is the hard per-host VM count limit configured on the host itself
 	// (0 means the host imposes none). MaxVmsPerHostMode selects what is counted:
 	// "any" (every VM) or "running" (VMs occupying a hypervisor slot).
-	MaxVmsPerHost     int64            `json:"max_vms_per_host,omitempty"`
-	MaxVmsPerHostMode string           `json:"max_vms_per_host_mode,omitempty"`
-	SystemReserved    HostResourceItem `json:"system_reserved,omitempty"`
-	Total             HostResourceItem `json:"total,omitempty"`
-	TotalAvailable    HostResourceItem `json:"total_available,omitempty"`
-	TotalInUse        HostResourceItem `json:"total_in_use,omitempty"`
-	TotalReserved     HostResourceItem `json:"total_reserved,omitempty"`
+	MaxVmsPerHost     int64  `json:"max_vms_per_host,omitempty"`
+	MaxVmsPerHostMode string `json:"max_vms_per_host_mode,omitempty"`
+	// PendingCpu / PendingMemory are the host's own published in-flight charge: what
+	// the creates it is currently building have been admitted for and have not put on
+	// the hypervisor yet. Cached so placement sees work that the last hardware probe
+	// predates. This is the host's view only — orchestrator reservations live in their
+	// own table and are combined with max(), never summed into these fields.
+	PendingCpu     int64            `json:"pending_cpu,omitempty"`
+	PendingMemory  float64          `json:"pending_memory,omitempty"`
+	SystemReserved HostResourceItem `json:"system_reserved,omitempty"`
+	Total          HostResourceItem `json:"total,omitempty"`
+	TotalAvailable HostResourceItem `json:"total_available,omitempty"`
+	TotalInUse     HostResourceItem `json:"total_in_use,omitempty"`
+	TotalReserved  HostResourceItem `json:"total_reserved,omitempty"`
 }
 
 func (c *HostResources) Diff(source HostResources) bool {
@@ -51,6 +58,15 @@ func (c *HostResources) Diff(source HostResources) bool {
 		return true
 	}
 	if c.MaxVmsPerHostMode != source.MaxVmsPerHostMode {
+		return true
+	}
+	// What the host has admitted but not built yet is exactly what placement needs to
+	// see between probes, so a change here has to count as a difference: the cached
+	// snapshot is only rewritten when the new one differs from the stored one.
+	if c.PendingCpu != source.PendingCpu {
+		return true
+	}
+	if c.PendingMemory != source.PendingMemory {
 		return true
 	}
 	if c.ReverseProxy == nil && source.ReverseProxy != nil {

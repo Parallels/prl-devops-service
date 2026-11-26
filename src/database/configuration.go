@@ -48,7 +48,7 @@ func generateInstallationId() string {
 // for the seed path to handle.
 func (g *GormDatabase) takeConfiguration() (*models.Configuration, error) {
 	var cfg models.Configuration
-	err := g.gormDB.Table("configurations").Order("rowid").Limit(1).Take(&cfg).Error
+	err := g.gormDB.Table("configurations").Order(insertionOrder(g.gormDB, "configurations")).Limit(1).Take(&cfg).Error
 	if err != nil {
 		return nil, err
 	}

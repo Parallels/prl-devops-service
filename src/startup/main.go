@@ -163,6 +163,14 @@ func Start(ctx basecontext.ApiContext) {
 		settings.StartSyncEngine(ctx)
 	}
 
+	// Replica identity, before anything can stamp a row with it or recover one by
+	// it: helpers caches the identity on first use, and the housekeeping below
+	// matches running jobs on it. Orchestrator only — a host has no replicas and
+	// nothing attributes work to it by node.
+	if cfg.IsOrchestrator() {
+		installNodeIdentity(ctx, func() (string, error) { return system.GetUniqueId(ctx) })
+	}
+
 	// Startup data housekeeping (engine-neutral: GetDatabaseService routes
 	// to whichever backend S3 selected).
 	if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
@@ -173,9 +181,28 @@ func Start(ctx basecontext.ApiContext) {
 		// (flagged for PO in the PR), watcher via a LOCAL interface
 		// assertion (R-1 keeps DatabaseService closed).
 		if serviceprovider.Get().Legacy() == nil {
-			dbService.RecoverOngoingJobs(ctx)
+			// Node-scoped where the backend can scope it: replicas share this
+			// database, and failing every running job at boot would kill the
+			// other replica's in-flight work — including the VM creates whose
+			// capacity reservations it holds. Same local-assertion shape as the
+			// watcher below (R-1 keeps DatabaseService closed).
+			if rn, ok := dbService.(interface {
+				RecoverOngoingJobsForNode(basecontext.ApiContext, []string)
+			}); ok {
+				rn.RecoverOngoingJobsForNode(ctx, helpers.NodeIDAliases())
+			} else {
+				dbService.RecoverOngoingJobs(ctx)
+			}
 			if sw, ok := dbService.(interface{ StartStaleJobWatcher(basecontext.ApiContext) }); ok {
 				sw.StartStaleJobWatcher(ctx)
+			}
+
+			// A rename of this replica through the settings service takes effect
+			// now instead of at next boot, and its rows follow it. Only meaningful
+			// where a node identity exists at all.
+			if cfg.IsOrchestrator() {
+				renamer, _ := dbService.(jobOwnerRenamer)
+				registerIdentityRenameHook(ctx, renamer)
 			}
 		}
 		if err := dbService.DeleteExpiredEnrollmentTokens(ctx); err != nil {
@@ -225,6 +252,7 @@ func Start(ctx basecontext.ApiContext) {
 		ctx.LogInfof("[Orchestrator] Public URL: %s", cfg.OrchestratorPublicUrl())
 		ctx.LogInfof("[Orchestrator] API Port: %s, TLS: %v", cfg.ApiPort(), cfg.TlsEnabled())
 		ctx.LogInfof("[Orchestrator] Catalog Enabled: %v", cfg.IsCatalog())
+
 		canUseOwnResources := false
 		if system.GetOperatingSystem() == "linux" {
 			canUseOwnResources = false

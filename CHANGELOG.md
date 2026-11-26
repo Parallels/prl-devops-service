@@ -5,6 +5,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.0] - Unreleased
 
+- feat: **placement is now visible and configurable where the rest of the node is
+  configured**. `GET /v1/config/hardware` on an orchestrator reports
+  `orchestrator_node_id` — the name this replica stamps on its reservations and on
+  the jobs it owns — and `machine_id`, the hardware id that addresses it. The
+  module list it returns now includes **`placement`** when capacity admission is
+  actually guarding dispatch, meaning the switch is on *and* the SQL data layer is
+  live: a replica on the legacy JSON data layer leaves it out with the switch on,
+  so the list describes behaviour rather than intention. It is reported and never
+  configured — it stays out of `ENABLED_MODULES`.
+- feat: **the placement and host-admission knobs are manageable through the
+  settings service**, alongside the rest of the configuration:
+  `PLACEMENT_RESERVATION_ENABLED`, `PLACEMENT_RESERVATION_TTL_MINUTES`,
+  `PLACEMENT_RECONCILE_INTERVAL_SECONDS`, `ORCHESTRATOR_NODE_ID` (orchestrator) and
+  `VM_CPU_ADMISSION_ENABLED`, `VM_CPU_OVERCOMMIT_RATIO` (host). A stored value
+  takes precedence over the environment, as it does everywhere else in that
+  service; the environment remains the fallback for anything never written. The
+  TTL and the sweep interval are read once when placement starts and are therefore
+  marked `requires_restart`, which the console uses to ask for one; the two gates
+  and the ratio apply without a restart. Catalogued defaults are taken from the
+  same constants the getters read, so the two cannot drift apart.
+- feat: **per-replica settings (`node:<machine-id>` scope)**, the prerequisite for
+  several orchestrator replicas sharing one database. Stored configuration lives in
+  that shared database, so a value that must differ per replica has to be keyed by
+  machine the way a host override is keyed by host; the layer wins over the shared
+  `orchestrator` scope for its own machine only, and host bundles are built from an
+  allow-list of host scopes so these rows can never be pushed to a host. Address it
+  with `?node=<machine-id>` on the orchestrator value endpoints. `ORCHESTRATOR_NODE_ID`
+  is accepted nowhere else — one shared identity row would be read by every replica
+  attached to the database and merge their ledgers and job ownership into one — and
+  two machines cannot claim the same identity: the write is refused and names the
+  machine that already holds it, because two replicas answering to one name would
+  sweep each other's running jobs at boot. Renaming a replica takes its rows with it
+  (`jobs.owner_node` and its capacity reservations), so nothing is left belonging to
+  a name that no longer exists, and deleting the override returns it to the name it
+  derives for itself. Guides: Settings → Per-replica values, Host Selection →
+  Configuring placement.
+
+- fix: **a fresh PostgreSQL install can now start**. Two defects, both invisible on
+  SQLite, both fatal on an empty PostgreSQL database. Legacy migration aborted with
+  `ON CONFLICT DO UPDATE command cannot affect row a second time` when the same
+  record was embedded under two parents (a VM stored inside two hosts): the batch
+  handed one statement two rows with the same primary key, which SQLite absorbed by
+  letting the later copy win — including its host assignment — and PostgreSQL
+  rejected outright. Duplicate keys within a batch are now collapsed, first copy
+  kept, with a warning naming what was dropped. And every load-order query asked
+  SQLite for `rowid`, which PostgreSQL does not have, so seeding the default
+  configuration failed (`column "rowid" does not exist`) and the process exited.
+  Load order now resolves per engine (`rowid` on SQLite, the primary key on
+  PostgreSQL) through one helper. Note what that trades: ids here are random, not
+  time-ordered, so PostgreSQL gets a stable order rather than insertion order —
+  lists may appear in a different order than on SQLite, and renaming a role or
+  claim moves it in the list instead of holding its place.
+
+- fix: **two concurrent VM creation requests targeting the same host are no
+  longer both accepted**. Placement previously decided from the host's cached
+  capacity snapshot and claimed nothing between that decision and the create
+  reaching the host, so simultaneous requests could each be told the same free
+  CPU count and both be admitted — over-committing the host and reporting a
+  negative `total_available` afterwards. The decision now consults what is
+  already promised (the orchestrator's reservation ledger and the host's own
+  reported pending, combined per dimension rather than summed), and the chosen
+  host is committed by an atomic per-host claim taken at dispatch time; a create
+  that no longer fits moves to the next candidate or is refused with the
+  shortage named (`CPU: required 6 logical CPUs, available 3`). Reservations are
+  released when the job running the create completes or fails, and reclaimed by a
+  reconciler otherwise. Requires the SQL data layer. Enforcement is on for
+  orchestrators, with `PLACEMENT_RESERVATION_ENABLED=false` as the documented
+  rollback; `PLACEMENT_RESERVATION_TTL_MINUTES` (default 120) bounds the lease and
+  `PLACEMENT_RECONCILE_INTERVAL_SECONDS` (default 30) the sweeper. Each replica
+  identifies itself with `ORCHESTRATOR_NODE_ID`, or with the machine's unique id —
+  the one telemetry reports as `hardware_id` — when that is unset, so containers
+  sharing a hostname still get distinct identities. A VM name that the owner
+  already uses — created or in flight — is now refused at placement instead of
+  failing on the host after the pack download. Hosts may enforce the same
+  arithmetic themselves with the opt-in `VM_CPU_ADMISSION_ENABLED` /
+  `VM_CPU_OVERCOMMIT_RATIO` (off by default) and then publish `pending_cpu` /
+  `pending_memory`, which the host resources endpoint reports alongside the
+  orchestrator's ledger. See Host Selection → What "available" means.
 - feat: **GORM-backed SQL data layer** — records now live in SQLite by
   default (`prl-devops.db`) or in a PostgreSQL server
   (`DB_TYPE`/`DB_PATH`/`DB_DSN`/`DB_AUTO_MIGRATE`, flat `db_*` config

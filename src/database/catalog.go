@@ -50,7 +50,7 @@ import (
 
 func (g *GormDatabase) loadCatalogManifests() ([]models.CatalogManifest, error) {
 	var rows []models.CatalogManifest
-	err := g.gormDB.Table("catalog_manifests").Order("rowid").Find(&rows).Error
+	err := g.gormDB.Table("catalog_manifests").Order(insertionOrder(g.gormDB, "catalog_manifests")).Find(&rows).Error
 	if err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
@@ -258,7 +258,7 @@ func (g *GormDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 	// "delete every authz-visible FoldEqual match" (:228-253).
 	return g.gormDB.Transaction(func(tx *gorm.DB) error {
 		var rows []models.CatalogManifest
-		if err := tx.Table("catalog_manifests").Order("rowid").Find(&rows).Error; err != nil {
+		if err := tx.Table("catalog_manifests").Order(insertionOrder(g.gormDB, "catalog_manifests")).Find(&rows).Error; err != nil {
 			return mapGormError(err, nil, nil)
 		}
 		visible, err := catalogAuthVisible(ctx, rows)
@@ -296,7 +296,7 @@ func (g *GormDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, 
 	// legacy deletes only the FIRST match, returning inside the hit (:285).
 	return g.gormDB.Transaction(func(tx *gorm.DB) error {
 		var rows []models.CatalogManifest
-		if err := tx.Table("catalog_manifests").Order("rowid").Find(&rows).Error; err != nil {
+		if err := tx.Table("catalog_manifests").Order(insertionOrder(g.gormDB, "catalog_manifests")).Find(&rows).Error; err != nil {
 			return mapGormError(err, nil, nil)
 		}
 		visible, err := catalogAuthVisible(ctx, rows)
@@ -324,7 +324,7 @@ func (g *GormDatabase) DeleteCatalogManifestVersionArch(ctx basecontext.ApiConte
 	// Cascade tx #3 of three: the narrowest (catalogId, version, arch) delete.
 	return g.gormDB.Transaction(func(tx *gorm.DB) error {
 		var rows []models.CatalogManifest
-		if err := tx.Table("catalog_manifests").Order("rowid").Find(&rows).Error; err != nil {
+		if err := tx.Table("catalog_manifests").Order(insertionOrder(g.gormDB, "catalog_manifests")).Find(&rows).Error; err != nil {
 			return mapGormError(err, nil, nil)
 		}
 		visible, err := catalogAuthVisible(ctx, rows)

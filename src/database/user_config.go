@@ -30,7 +30,7 @@ import (
 // loadUserConfigs pins storage order (rowid) like every legacy slice scan.
 func (g *GormDatabase) loadUserConfigs() ([]models.UserConfig, error) {
 	var rows []models.UserConfig
-	err := g.gormDB.Table("user_configs").Order("rowid").Find(&rows).Error
+	err := g.gormDB.Table("user_configs").Order(insertionOrder(g.gormDB, "user_configs")).Find(&rows).Error
 	if err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}

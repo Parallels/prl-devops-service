@@ -18,6 +18,7 @@ import (
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/registry"
+	"github.com/Parallels/prl-devops-service/placement"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
@@ -29,18 +30,31 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, j
 		}
 	}
 
-	validHosts, apiError := s.getValidHostsForCreate(ctx, request, updateJob)
+	validHosts, specs, apiError := s.getValidHostsForCreate(ctx, request, jobID, updateJob)
 	if apiError != nil {
 		return nil, apiError
 	}
 
 	var lastError *models.ApiErrorResponse
 	for _, host := range validHosts {
+		// Claim before dispatch, per host, inside the placement store's
+		// per-host transaction. A refusal here means the host stopped fitting
+		// since it was evaluated — someone else took the room — so move to the
+		// next candidate rather than dispatching into an overcommit.
+		if claimErr := s.claimCapacity(ctx, host, jobID, request, specs); claimErr != nil {
+			lastError = claimErr
+			updateJob(fmt.Sprintf("Host %s skipped: %s — trying next host", host.Host, claimErr.Message))
+			continue
+		}
+
 		updateJob(fmt.Sprintf("Creating virtual machine on host %s", host.Host))
 		response, err := s.CallCreateHostVirtualMachine(host, jobID, request)
 		if err != nil {
 			e := models.NewFromError(err)
 			lastError = &e
+			// The create never started here, so the charge is not owed. The
+			// job terminal hook releases it as well; both are idempotent.
+			s.releaseCapacity(jobID, placement.OutcomeFailed)
 			updateJob(fmt.Sprintf("Host %s failed: %s — trying next host", host.Host, e.Message))
 			continue
 		}
@@ -55,6 +69,8 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, j
 			Code:    500,
 		}
 	}
+	// No host took the create: hand back anything still claimed for it.
+	s.releaseCapacity(jobID, placement.OutcomeFailed)
 	updateJob(lastError.Message)
 	return nil, lastError
 }
@@ -67,7 +83,7 @@ func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiCo
 		}
 	}
 
-	validHosts, apiError := s.getValidHostsForCreate(ctx, request, updateJob)
+	validHosts, specs, apiError := s.getValidHostsForCreate(ctx, request, jobID, updateJob)
 	if apiError != nil {
 		return nil, apiError
 	}
@@ -75,11 +91,21 @@ func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiCo
 	// Stage 5: Target Execution — dispatch async to the first willing host.
 	reg := registry.Get()
 	for _, host := range validHosts {
+		// The claim is what makes "willing" mean something: it is taken in the
+		// same transaction that re-reads the host's numbers and the ledger, so
+		// two concurrent dispatches cannot both be told this host has room.
+		if claimErr := s.claimCapacity(ctx, host, jobID, request, specs); claimErr != nil {
+			apiError = claimErr
+			updateJob(fmt.Sprintf("Host %s skipped: %s — trying next host", host.Host, claimErr.Message))
+			continue
+		}
+
 		updateJob(fmt.Sprintf("Dispatching to host %s", host.Host))
 		hostJob, err := s.CallCreateHostVirtualMachineAsync(host, jobID, request)
 		if err != nil {
 			e := models.NewFromError(err)
 			apiError = &e
+			s.releaseCapacity(jobID, placement.OutcomeFailed)
 			updateJob(fmt.Sprintf("Host %s failed: %s — trying next host", host.Host, e.Message))
 			continue
 		}
@@ -110,6 +136,7 @@ func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiCo
 			Code:    500,
 		}
 	}
+	s.releaseCapacity(jobID, placement.OutcomeFailed)
 	updateJob(apiError.Message)
 	return nil, apiError
 }
@@ -122,17 +149,23 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 		}
 	}
 
-	host, apiError := s.getValidHostForCreate(ctx, hostId, request, updateJob)
+	host, specs, apiError := s.getValidHostForCreate(ctx, hostId, request, jobID, updateJob)
 	if apiError != nil {
 		return nil, apiError
+	}
+
+	if claimErr := s.claimCapacity(ctx, *host, jobID, request, specs); claimErr != nil {
+		updateJob(claimErr.Message)
+		return nil, claimErr
 	}
 
 	updateJob(fmt.Sprintf("Creating virtual machine on host %s", host.Host))
 	response, err := s.CallCreateHostVirtualMachine(*host, jobID, request)
 	if err != nil {
 		e := models.NewFromError(err)
+		s.releaseCapacity(jobID, placement.OutcomeFailed)
 		updateJob(fmt.Sprintf("Host %s failed: %s", host.Host, e.Message))
-		s.Refresh()
+		s.queueHostRefresh(host.ID)
 		return nil, &e
 	}
 
@@ -148,9 +181,14 @@ func (s *OrchestratorService) DispatchCreateHosVirtualMachine(ctx basecontext.Ap
 		}
 	}
 
-	host, apiError := s.getValidHostForCreate(ctx, hostId, request, updateJob)
+	host, specs, apiError := s.getValidHostForCreate(ctx, hostId, request, jobID, updateJob)
 	if apiError != nil {
 		return nil, apiError
+	}
+
+	if claimErr := s.claimCapacity(ctx, *host, jobID, request, specs); claimErr != nil {
+		updateJob(claimErr.Message)
+		return nil, claimErr
 	}
 
 	updateJob(fmt.Sprintf("Dispatching to host %s", host.Host))
@@ -159,8 +197,9 @@ func (s *OrchestratorService) DispatchCreateHosVirtualMachine(ctx basecontext.Ap
 	hostJob, err := s.CallCreateHostVirtualMachineAsync(*host, jobID, request)
 	if err != nil {
 		e := models.NewFromError(err)
+		s.releaseCapacity(jobID, placement.OutcomeFailed)
 		updateJob(fmt.Sprintf("Host %s failed: %s", host.Host, e.Message))
-		s.Refresh()
+		s.queueHostRefresh(host.ID)
 		return nil, &e
 	}
 
@@ -184,7 +223,13 @@ func (s *OrchestratorService) DispatchCreateHosVirtualMachine(ctx basecontext.Ap
 	return nil, nil
 }
 
-func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest, updateJob func(string)) ([]data_models.OrchestratorHost, *models.ApiErrorResponse) {
+// getValidHostsForCreate evaluates every host against the scheduling decision
+// factor and returns the eligible ones in dispatch order, together with the
+// specs they were judged on. The specs come back because the caller still has
+// to claim capacity for the host it picks, and re-resolving them would mean a
+// second catalog round trip that could disagree with the first.
+func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest,
+	jobID string, updateJob func(string)) ([]data_models.OrchestratorHost, *models.CreateVirtualMachineSpecs, *models.ApiErrorResponse) {
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		apiError := &models.ApiErrorResponse{
@@ -192,14 +237,14 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 			Code:    500,
 		}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
 
 	specs, specsErr := s.getSpecsFromRequest(request)
 	if specsErr != nil {
 		apiError := &models.ApiErrorResponse{Message: specsErr.Error(), Code: 400}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
 
 	hosts, err := dbService.GetOrchestratorHosts(ctx, "")
@@ -209,13 +254,18 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 			Code:    500,
 		}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
+
+	// One ledger read and one name probe for the whole candidate set, not one
+	// per host. This is the read half of placement; it decides nothing, the
+	// claim in claimCapacity does.
+	placementCtx := s.newPlacementContext(ctx, request, jobID)
 
 	var validHosts []data_models.OrchestratorHost
 	var rejections []string
 	for _, orchestratorHost := range hosts {
-		isOk, validateErr := s.validateHost(orchestratorHost, request, specs)
+		isOk, validateErr := s.validateHost(orchestratorHost, request, specs, placementCtx.view(orchestratorHost.ID))
 		if validateErr != nil || !isOk {
 			msg := fmt.Sprintf("Host %s skipped", orchestratorHost.Host)
 			if validateErr != nil {
@@ -238,19 +288,20 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 			apiError.Message += ":\n" + strings.Join(rejections, "\n")
 		}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
 
 	validHosts, filterErr := filterAndSortHosts(validHosts, request, s.pingHostForLatency)
 	if filterErr != nil {
 		updateJob(filterErr.Message)
-		return nil, filterErr
+		return nil, nil, filterErr
 	}
 
-	return validHosts, nil
+	return validHosts, specs, nil
 }
 
-func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, hostId string, request models.CreateVirtualMachineRequest, updateJob func(string)) (*data_models.OrchestratorHost, *models.ApiErrorResponse) {
+func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, hostId string, request models.CreateVirtualMachineRequest,
+	jobID string, updateJob func(string)) (*data_models.OrchestratorHost, *models.CreateVirtualMachineSpecs, *models.ApiErrorResponse) {
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		apiError := &models.ApiErrorResponse{
@@ -258,14 +309,14 @@ func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, 
 			Code:    500,
 		}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
 
 	specs, specsErr := s.getSpecsFromRequest(request)
 	if specsErr != nil {
 		apiError := &models.ApiErrorResponse{Message: specsErr.Error(), Code: 400}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
 	if specs == nil {
 		apiError := &models.ApiErrorResponse{
@@ -273,7 +324,7 @@ func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, 
 			Code:    500,
 		}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
 
 	host, err := dbService.GetOrchestratorHost(ctx, hostId)
@@ -283,14 +334,18 @@ func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, 
 			Code:    500,
 		}
 		updateJob(apiError.Message)
-		return nil, apiError
+		return nil, nil, apiError
 	}
 
-	isOk, validateErr := s.validateHost(*host, request, specs)
+	// The explicit-host path bypasses selection, not accounting: an operator
+	// naming a host still gets the pending-aware evaluation and the same name
+	// guard as the automatic path.
+	placementCtx := s.newPlacementContext(ctx, request, jobID)
+	isOk, validateErr := s.validateHost(*host, request, specs, placementCtx.view(host.ID))
 	if validateErr != nil {
 		validateErr.Message = fmt.Sprintf("Host %s failed validation: %s", host.Host, validateErr.Message)
 		updateJob(validateErr.Message)
-		return nil, validateErr
+		return nil, nil, validateErr
 	}
 
 	if !isOk {
@@ -299,11 +354,11 @@ func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, 
 			Code:    400,
 		}
 		updateJob(apiError.Message)
-		s.Refresh()
-		return nil, apiError
+		s.queueHostRefresh(host.ID)
+		return nil, nil, apiError
 	}
 
-	return host, nil
+	return host, specs, nil
 }
 
 func (s *OrchestratorService) pingHostForLatency(host data_models.OrchestratorHost) time.Duration {
@@ -520,8 +575,9 @@ func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMa
 	return specs, nil
 }
 
-func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, specs *models.CreateVirtualMachineSpecs) (bool, *models.ApiErrorResponse) {
-	checks := s.checkHostRequirements(host, request, specs)
+func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest,
+	specs *models.CreateVirtualMachineSpecs, view resourceView) (bool, *models.ApiErrorResponse) {
+	checks := s.checkHostRequirements(host, request, specs, view)
 	var failures []string
 	for _, check := range checks {
 		if !check.Passed {

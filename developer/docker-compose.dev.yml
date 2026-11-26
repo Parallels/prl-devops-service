@@ -1,0 +1,37 @@
+# Developer dependencies — 3rd-party services needed for local development
+#
+# This stack only holds supporting services (databases, brokers, ...) that
+# developers may need next to the service. It does NOT build or run the
+# service itself. Add new 3rd-party dependencies here as extra services.
+#
+# Usage:
+#   make dev-services-up        # docker compose -f developer/docker-compose.dev.yml up -d
+#   make dev-services-down      # stop them (data volumes are kept)
+#
+# Services:
+#   postgres  PostgreSQL 17 on localhost:5436 (db/user/password: devops)
+#             Point the service at it with:
+#               DB_TYPE=postgres
+#               DB_DSN=postgres://devops:devops@localhost:5436/devops?sslmode=disable
+#
+# Notes:
+#   - These credentials are for local development only. Never reuse them.
+#   - Data is kept in named volumes; remove with
+#     `docker compose -f developer/docker-compose.dev.yml down -v`.
+name: DevOps
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: devops-postgres
+    restart: unless-stopped
+    ports:
+      - '5436:5432'
+    environment:
+      POSTGRES_DB: devops
+      POSTGRES_USER: devops
+      POSTGRES_PASSWORD: devops
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

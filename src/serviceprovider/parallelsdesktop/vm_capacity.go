@@ -2,6 +2,7 @@ package parallelsdesktop
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
 // httpStatusServiceUnavailable is returned when a VM limit is configured but the host
@@ -208,4 +210,200 @@ func (s *ParallelsService) PendingVmSlots() int64 {
 	defer s.vmAdmissionMu.Unlock()
 
 	return countPendingVmSlots(s.vmCreateSlots, s.vmStartSlots, cfg.MaxVmsPerHostMode())
+}
+
+// capacityCharge is the CPU and memory one operation has been admitted for and has not
+// put on the hypervisor yet: what the create is about to apply with
+// prlctl set --cpus / --memsize. It is kept in the units the host publishes its
+// capacity in, logical CPUs and MiB, so a charge and a published snapshot can be
+// compared without a conversion step drifting between the two.
+type capacityCharge struct {
+	cpu    int64
+	memory float64
+}
+
+// capacityEpsilon absorbs the rounding of a capacity built by float math (MiB
+// conversions multiplied by the overcommit ratio): a create that exactly fills the
+// host must be admitted, not refused over the last bit of a multiplication.
+const capacityEpsilon = 1e-9
+
+// countPendingCapacity sums the charges the inventory does not reflect yet. Each
+// operation is charged once, under its operation ID, the way the VM count gate charges
+// it one slot.
+//
+// Caller holds vmAdmissionMu.
+func countPendingCapacity(slots map[string]capacityCharge) capacityCharge {
+	var total capacityCharge
+	for _, charge := range slots {
+		total.cpu += charge.cpu
+		total.memory += charge.memory
+	}
+
+	return total
+}
+
+// runningCapacityUsage charges the VMs that occupy the hypervisor today. Stopped VMs
+// are left out deliberately: GetHardwareUsage books them as TotalReserved, not in the
+// subtrahend of the TotalAvailable it publishes, so the gate and the snapshot a
+// placement decision is made from agree on what "in use" means. Reusing
+// accumulateVmHardwareUsage keeps the two from drifting apart.
+func runningCapacityUsage(vms []models.ParallelsVM) (capacityCharge, error) {
+	usage := &models.SystemUsageResponse{}
+	for _, vm := range vms {
+		if err := accumulateVmHardwareUsage(usage, vm); err != nil {
+			return capacityCharge{}, err
+		}
+	}
+
+	charge := capacityCharge{}
+	if usage.TotalInUse != nil {
+		charge.cpu = usage.TotalInUse.LogicalCpuCount
+		charge.memory = usage.TotalInUse.MemorySize
+	}
+
+	return charge, nil
+}
+
+// liveHostHardware returns the authoritative machine totals. Tests inject
+// hostCapacityFn to keep the gate off the real machine; production asks the same system
+// service call GetHardwareUsage publishes Total from.
+func (s *ParallelsService) liveHostHardware(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
+	if s.hostCapacityFn != nil {
+		return s.hostCapacityFn(ctx)
+	}
+
+	return system.Get().GetHardwareInfo(ctx)
+}
+
+// ReserveVmCapacity is the exported entry point used by the VM create handlers to admit
+// an operation against this host's CPU and memory capacity. It is the CPU/memory
+// analogue of ReserveVmSlot and is a no-op unless the operator opts in with
+// VM_CPU_ADMISSION_ENABLED, so an upgrade changes nothing for the deployments that
+// oversubscribe on purpose. VM_CPU_OVERCOMMIT_RATIO then multiplies the capacity for
+// the same audience.
+//
+// Admission and reservation are atomic within this host service: the inventory is read
+// outside the lock and the comparison plus the booking happen inside it, so a burst of
+// concurrent creates cannot overshoot what the host has. A create submitted straight to
+// a host passes here even though it never saw the orchestrator's placement pass.
+//
+// A create whose specs cannot be read is admitted count-only rather than blocked: a
+// number we cannot measure must not become a hard failure, which is the posture the
+// VM count gate keeps when no limit is configured.
+func (s *ParallelsService) ReserveVmCapacity(ctx basecontext.ApiContext, operationID string, cpus int64, memoryMiB float64) (func(), error) {
+	cfg := config.Get()
+	if !cfg.VMCPUAdmissionEnabled() {
+		return func() {}, nil
+	}
+
+	if cpus <= 0 && memoryMiB <= 0 {
+		ctx.LogWarnf("[VmCapacity] Create admitted count-only op=%s: no readable CPU or memory specs", operationID)
+		return func() {}, nil
+	}
+
+	hardware, err := s.liveHostHardware(ctx)
+	if err != nil {
+		// Fail closed: a capacity that cannot be measured would otherwise be silently
+		// unlimited, which defeats the purpose of the gate. Same posture as the VM
+		// count limit at the head of this file.
+		ctx.LogErrorf("[VmCapacity] Create rejected op=%s: cannot read host hardware: %v", operationID, err)
+		return nil, errors.NewWithCode("cannot verify host CPU capacity: host hardware info failed", httpStatusServiceUnavailable)
+	}
+	if hardware.LogicalCpuCount <= 0 || hardware.MemorySize <= 0 {
+		// The system service answered without measuring anything. Comparing against a
+		// zeroed snapshot would refuse every create with a message claiming the host is
+		// full, which sends an operator looking in the wrong place.
+		ctx.LogErrorf("[VmCapacity] Create rejected op=%s: host hardware reported no capacity cpus=%d memory=%.0f",
+			operationID, hardware.LogicalCpuCount, hardware.MemorySize)
+		return nil, errors.NewWithCode("cannot verify host CPU capacity: host hardware info failed", httpStatusServiceUnavailable)
+	}
+	vms, err := s.liveVms(ctx)
+	if err != nil {
+		ctx.LogErrorf("[VmCapacity] Create rejected op=%s: cannot enumerate VMs: %v", operationID, err)
+		return nil, errors.NewWithCode("cannot verify host CPU capacity: live host inventory failed", httpStatusServiceUnavailable)
+	}
+	inUse, err := runningCapacityUsage(vms)
+	if err != nil {
+		ctx.LogErrorf("[VmCapacity] Create rejected op=%s: cannot read VM hardware: %v", operationID, err)
+		return nil, errors.NewWithCode("cannot verify host CPU capacity: live host inventory failed", httpStatusServiceUnavailable)
+	}
+
+	key := operationID
+	if key == "" {
+		key = fmt.Sprintf("op-%d", time.Now().UnixNano())
+	}
+
+	ratio := cfg.VMCPUOvercommitRatio()
+	s.vmAdmissionMu.Lock()
+	pending := countPendingCapacity(s.vmCapacitySlots)
+
+	// The overcommit ratio scales what is left for VMs after the host keeps its own
+	// share, so it widens the same pool the published snapshot measures rather than
+	// opening a second, unmeasured one.
+	usableCpus := (float64(hardware.LogicalCpuCount) - float64(cfg.SystemReservedCpu())) * ratio
+	availableCpus := usableCpus - float64(inUse.cpu) - float64(pending.cpu)
+	if cpus > 0 && float64(cpus) > availableCpus+capacityEpsilon {
+		s.vmAdmissionMu.Unlock()
+		ctx.LogWarnf("[VmCapacity] Create rejected op=%s required=%d available=%.0f cpus usable=%.0f in_use=%d pending=%d ratio=%g",
+			key, cpus, availableCpus, usableCpus, inUse.cpu, pending.cpu, ratio)
+		return nil, errors.NewWithCodef(409, "cpu admission refused: required %d logical CPUs, available %d",
+			cpus, int64(math.Floor(availableCpus)))
+	}
+
+	usableMemory := (hardware.MemorySize - float64(cfg.SystemReservedMemory())) * ratio
+	availableMemory := usableMemory - inUse.memory - pending.memory
+	if memoryMiB > 0 && memoryMiB > availableMemory+capacityEpsilon {
+		s.vmAdmissionMu.Unlock()
+		ctx.LogWarnf("[VmCapacity] Create rejected op=%s required=%.0f available=%.0f MiB usable=%.0f in_use=%.0f pending=%.0f ratio=%g",
+			key, memoryMiB, availableMemory, usableMemory, inUse.memory, pending.memory, ratio)
+		return nil, errors.NewWithCodef(409, "memory admission refused: required %.0f MiB, available %.0f MiB",
+			memoryMiB, math.Floor(availableMemory))
+	}
+
+	if s.vmCapacitySlots == nil {
+		s.vmCapacitySlots = make(map[string]capacityCharge)
+	}
+	s.vmCapacitySlots[key] = capacityCharge{cpu: cpus, memory: memoryMiB}
+	s.vmAdmissionMu.Unlock()
+
+	ctx.LogInfof("[VmCapacity] Create admitted op=%s cpus=%d/%.0f memory=%.0f/%.0f MiB in_use_cpus=%d in_use_memory=%.0f ratio=%g",
+		key, cpus, usableCpus, memoryMiB, usableMemory, inUse.cpu, inUse.memory, ratio)
+
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			s.vmAdmissionMu.Lock()
+			delete(s.vmCapacitySlots, key)
+			s.vmAdmissionMu.Unlock()
+			ctx.LogInfof("[VmCapacity] Create capacity released op=%s", key)
+		})
+	}, nil
+}
+
+// PendingCpu returns the logical CPUs admitted for creates the inventory does not show
+// yet. GetHardwareUsage publishes it so the orchestrator's cached view of this host is
+// honest between probes; it reports 0 while the gate is disabled, which keeps the
+// payload of a host without the gate identical to what it was before.
+func (s *ParallelsService) PendingCpu() int64 {
+	if !config.Get().VMCPUAdmissionEnabled() {
+		return 0
+	}
+
+	s.vmAdmissionMu.Lock()
+	defer s.vmAdmissionMu.Unlock()
+
+	return countPendingCapacity(s.vmCapacitySlots).cpu
+}
+
+// PendingMemory returns the MiB admitted for creates the inventory does not show yet.
+// See PendingCpu.
+func (s *ParallelsService) PendingMemory() float64 {
+	if !config.Get().VMCPUAdmissionEnabled() {
+		return 0
+	}
+
+	s.vmAdmissionMu.Lock()
+	defer s.vmAdmissionMu.Unlock()
+
+	return countPendingCapacity(s.vmCapacitySlots).memory
 }

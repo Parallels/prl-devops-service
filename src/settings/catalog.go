@@ -199,5 +199,67 @@ func Catalog() []models.SettingDefinition {
 			Description:  "Obfuscate catalog provider credentials at rest.",
 			AppliesTo:    models.SettingAppliesToAll,
 		},
+
+		// ── placement / capacity admission ──────────────────────────────────
+		//
+		// The orchestrator half of the ledger and the host half of the gate, so a
+		// deployment can be brought under admission control one host at a time
+		// instead of globally. Nothing here is boot-critical: enforcement is read
+		// per dispatch and can be switched off without a restart, which is the
+		// rollback path the feature promises.
+		{
+			Key:          constants.PlacementReservationEnabledEnvVar,
+			Type:         models.SettingValueTypeBool,
+			DefaultValue: boolStr(constants.DefaultPlacementReservationEnabled),
+			Description:  "Reserve host capacity while a VM create is in flight, so two concurrent creates cannot both be told a host has room. Read on every dispatch.",
+			AppliesTo:    models.SettingAppliesToOrchestrator,
+		},
+		{
+			Key:             constants.PlacementReservationTTLEnvVar,
+			Type:            models.SettingValueTypeInt,
+			DefaultValue:    itoa(constants.DefaultPlacementReservationTTLEnMinutes),
+			Description:     "Minutes a reservation may outlive its owner before the sweeper reclaims it. Last-resort backstop: completion and failure release earlier. Must exceed the slowest legitimate create. Capped at 1440.",
+			AppliesTo:       models.SettingAppliesToOrchestrator,
+			RequiresRestart: true,
+		},
+		{
+			Key:             constants.PlacementReconcileIntervalEnvVar,
+			Type:            models.SettingValueTypeInt,
+			DefaultValue:    itoa(constants.DefaultPlacementReconcileIntervalSeconds),
+			Description:     "Seconds between sweeps that release reservations whose job is terminal or gone. Capped at 3600.",
+			AppliesTo:       models.SettingAppliesToOrchestrator,
+			RequiresRestart: true,
+		},
+		{
+			Key:          constants.OrchestratorNodeIDEnvVar,
+			Type:         models.SettingValueTypeString,
+			DefaultValue: "",
+			Description:  "This replica's identity in the reservation ledger and in job ownership. Per-machine only: it must be written to scope node:<machine-id> (reported by /api/v1/config/hardware), never to the shared orchestrator scope, or every replica attached to this database would claim the same identity.",
+			AppliesTo:    models.SettingAppliesToOrchestrator,
+		},
+		{
+			Key:          constants.VMCPUAdmissionEnabledEnvVar,
+			Type:         models.SettingValueTypeBool,
+			DefaultValue: "false",
+			Description:  "Enforce the CPU/memory capacity gate on this host at create time. Off by default so deployments that oversubscribe on purpose keep working; set it per host.",
+			AppliesTo:    models.SettingAppliesToHost,
+		},
+		{
+			Key:          constants.VMCPUOvercommitRatioEnvVar,
+			Type:         models.SettingValueTypeString,
+			DefaultValue: ftoa(constants.DefaultVMCPUOvercommitRatio),
+			Description:  "Factor applied to the capacity the host gate compares against. 1.0 means no oversubscription; above 1.0 re-allows it deliberately. Must be a positive number.",
+			AppliesTo:    models.SettingAppliesToHost,
+		},
 	}
+}
+
+// boolStr / ftoa keep catalog defaults tied to the compiled constants rather
+// than to a hand-copied string that can outlive a change to them.
+func boolStr(v bool) string {
+	return strconv.FormatBool(v)
+}
+
+func ftoa(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
 }

@@ -79,7 +79,12 @@ package parity
 // ReplaceOrchestratorHostVMs full-sync field wipe, healthy+enabled
 // host-level VM filter, ghost-job boot-posture divergence (legacy
 // auto-recovers at Connect; SQL defers to the #421 watcher — terminal
-// states converge).
+// states converge), ongoing-job recovery scope divergence (SQL startup
+// recovers this replica's rows — under any identity it has used, plus
+// ownerless ones — through
+// RecoverOngoingJobsForNode, a local assertion outside R-1; legacy has
+// no second replica to protect and keeps its global recovery at
+// Connect, so the two engines are not comparable at boot by design).
 //
 // Deferred (#426/decision scope, tally in the feature ledger): T14
 // RFC3339Nano ordering, T15 legacy concurrent reorder race (legacy leg

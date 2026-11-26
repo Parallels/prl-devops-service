@@ -33,7 +33,7 @@ func (g *GormDatabase) GetHostVMSnapshots(ctx basecontext.ApiContext, hostId str
 	}
 	var rows []models.VMSnapshot
 	if err := g.gormDB.Table("vm_snapshots").Where("host_id = ?", hostId).
-		Order("rowid").Find(&rows).Error; err != nil {
+		Order(insertionOrder(g.gormDB, "vm_snapshots")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	if len(rows) == 0 {
@@ -105,7 +105,7 @@ func (g *GormDatabase) GetListVMSnapshotsByVMId(vmID string) ([]models.VMSnapsho
 	}
 	var rows []models.VMSnapshot
 	if err := g.gormDB.Table("vm_snapshots").Where("vm_id = ? AND host_id = ''", vmID).
-		Order("rowid").Find(&rows).Error; err != nil {
+		Order(insertionOrder(g.gormDB, "vm_snapshots")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	if len(rows) == 0 {

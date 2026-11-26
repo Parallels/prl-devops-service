@@ -24,7 +24,7 @@ func (g *GormDatabase) GetSchemaVersion(ctx basecontext.ApiContext) (string, err
 		return "", interfaces.ErrDatabaseNotConnected
 	}
 	var row models.DatabaseSchema
-	err := g.gormDB.Table("schema_metadata").Order("rowid").Limit(1).Take(&row).Error
+	err := g.gormDB.Table("schema_metadata").Order(insertionOrder(g.gormDB, "schema_metadata")).Limit(1).Take(&row).Error
 	if err == gorm.ErrRecordNotFound {
 		return "", nil // legacy zero-value Data.Schema.Version — empty, not error
 	}
@@ -55,7 +55,7 @@ func (g *GormDatabase) UpdateSchemaVersion(ctx basecontext.ApiContext, version s
 		return nil
 	}
 	var row models.DatabaseSchema
-	if err := g.gormDB.Table("schema_metadata").Order("rowid").Limit(1).Take(&row).Error; err != nil {
+	if err := g.gormDB.Table("schema_metadata").Order(insertionOrder(g.gormDB, "schema_metadata")).Limit(1).Take(&row).Error; err != nil {
 		return mapGormError(err, nil, nil)
 	}
 	if row.Version == version {

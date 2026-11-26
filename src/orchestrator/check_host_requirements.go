@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/placement"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
@@ -24,6 +25,10 @@ const (
 	checkNameVmCount        = "vm_count"
 	checkNameMacosInventory = "macos_inventory"
 	checkNameMacosCapacity  = "macos_capacity"
+	// checkNameVmName is the cluster-wide name guard. It is reported verbatim
+	// (like host_state) rather than folded into "Insufficient host resources":
+	// a taken name is not a shortage of anything.
+	checkNameVmName = "vm_name"
 )
 
 // unit constants shared with the pre-flight response payload.
@@ -38,9 +43,16 @@ const (
 // returns the outcome of every individual check, with required-vs-available detail.
 //
 // The evaluation short-circuits on blocking conditions (host state, architecture,
-// missing specs) exactly like the original validateHost, returning a single failing
-// check so validateHost can preserve its legacy single-message error responses.
-func (s *OrchestratorService) checkHostRequirements(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, specs *models.CreateVirtualMachineSpecs) []models.RequirementCheckResult {
+// missing specs, a name already spoken for) exactly like the original validateHost,
+// returning a single failing check so validateHost can preserve its legacy
+// single-message error responses.
+//
+// view carries what the cached snapshot cannot know — capacity already promised
+// to creates still in flight, and whether this VM name is claimed. It is passed
+// in rather than read from a global so the read-only pre-flight path and the
+// create path provably evaluate the same numbers.
+func (s *OrchestratorService) checkHostRequirements(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest,
+	specs *models.CreateVirtualMachineSpecs, view resourceView) []models.RequirementCheckResult {
 	// Hard placement constraint (target_tags): the host must carry EVERY
 	// requested tag. Evaluated first so tag-mismatched hosts short-circuit
 	// before any further state probing or the disk-space network call — the
@@ -99,10 +111,32 @@ func (s *OrchestratorService) checkHostRequirements(host data_models.Orchestrato
 		checks = append([]models.RequirementCheckResult{*hostTagsCheck}, checks...)
 	}
 
+	// The name guard is host-independent, so a collision is a verdict rather
+	// than a per-host fact: report it verbatim and skip the rest, exactly like
+	// the host_state / architecture short-circuits. Without it, two concurrent
+	// same-name creates either fail late on the host after a full pack
+	// download, or — if they land on different hosts — both succeed.
+	if view.nameTaken {
+		return []models.RequirementCheckResult{failedCheck(checkNameVmName,
+			fmt.Sprintf("VM name %q is already in use by owner %q", request.Name, request.Owner))}
+	}
+
+	// What the host reported is only half the picture. Between probes the
+	// snapshot knows nothing about creates this orchestrator already dispatched,
+	// and the reservation ledger knows nothing about a create started directly
+	// against the host — so both sources are consulted and CombinePending
+	// charges the overlap once instead of twice.
+	//
 	// We will trust that the host has the reserved cpus setup correctly
 	// otherwise we would potentially go above the reserved cpus
-	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount
-	availableMemory := host.Resources.TotalAvailable.MemorySize
+	inFlight := placement.CombinePending(view.pending, hostReportedPending(host.Resources))
+	available := placement.CapacityView{
+		CPU:     host.Resources.TotalAvailable.LogicalCpuCount,
+		Memory:  host.Resources.TotalAvailable.MemorySize,
+		VMCount: host.Resources.TotalAvailable.TotalVms,
+	}.Sub(inFlight)
+	availableCpus := available.CPU
+	availableMemory := available.Memory
 
 	requiredCpus := specs.GetCpuCount()
 	cpuCheck := models.RequirementCheckResult{
@@ -171,7 +205,9 @@ func (s *OrchestratorService) checkHostRequirements(host data_models.Orchestrato
 		if strings.EqualFold(host.Resources.MaxVmsPerHostMode, constants.MAX_VMS_PER_HOST_MODE_RUNNING) {
 			current = host.Resources.TotalInUse.TotalVms
 		}
-		pending := host.Resources.TotalReserved.TotalVms
+		// The host's own pending count covers what it was asked to do; the
+		// ledger covers what placement promised and the host has not seen yet.
+		pending := maxInt64(host.Resources.TotalReserved.TotalVms, inFlight.VMCount)
 		maxVms := host.Resources.MaxVmsPerHost
 		s.ctx.LogInfof("[VmCapacity] Scheduling host=%s current=%d pending=%d maximum=%d mode=%s",
 			host.ID, current, pending, maxVms, host.Resources.MaxVmsPerHostMode)
@@ -187,7 +223,8 @@ func (s *OrchestratorService) checkHostRequirements(host data_models.Orchestrato
 	}
 
 	if strings.EqualFold(specs.Type, "macvm") {
-		active, pending := host.Resources.TotalAppleVms, host.Resources.TotalReserved.TotalAppleVms
+		active := host.Resources.TotalAppleVms
+		pending := maxInt64(host.Resources.TotalReserved.TotalAppleVms, inFlight.AppleVM)
 		s.ctx.LogInfof("[MacVMCapacity] Scheduling host=%s active=%d pending=%d maximum=%d", host.ID, active, pending, MaxNumberAppleVms)
 
 		inventoryOk := host.Resources.MacVMInventoryComplete == nil || *host.Resources.MacVMInventoryComplete
@@ -249,16 +286,27 @@ func (s *OrchestratorService) CheckMachineRequirements(ctx basecontext.ApiContex
 
 	response := &models.CheckMachineRequirementsResponse{Requirements: resolvedRequirements(specs, request)}
 
+	// The pre-flight answers "would a create fit here", so it has to know what a
+	// create would be competing with. Read-only by contract: this path consults
+	// the ledger, it never claims from it — claiming is claimCapacity's job, and
+	// a dry run that reserved capacity would fail the very creates asking about
+	// it.
+	placementCtx := s.newPlacementContext(ctx, models.CreateVirtualMachineRequest{
+		Owner: request.Owner,
+		Name:  request.MachineName,
+	}, "")
+
 	archUnspecified := strings.TrimSpace(request.Architecture) == ""
 	failedHosts := make([]models.MachineRequirementsHostResult, 0, len(hosts))
 	for _, host := range hosts {
-		vmRequest := models.CreateVirtualMachineRequest{Architecture: request.Architecture, Owner: request.Owner, TargetTags: request.TargetTags}
+		vmRequest := models.CreateVirtualMachineRequest{Architecture: request.Architecture, Owner: request.Owner,
+			Name: request.MachineName, TargetTags: request.TargetTags}
 		if archUnspecified {
 			// No architecture constraint requested: match the host so the decision
 			// factor keeps its semantics, and drop the trivial pass from the report.
 			vmRequest.Architecture = host.Architecture
 		}
-		checks := s.checkHostRequirements(host, vmRequest, specs)
+		checks := s.checkHostRequirements(host, vmRequest, specs, placementCtx.view(host.ID))
 		if archUnspecified {
 			checks = dropRequirementCheck(checks, checkNameArchitecture)
 		}
@@ -397,15 +445,15 @@ func dropRequirementCheck(checks []models.RequirementCheckResult, name string) [
 }
 
 // isBlockingRequirementCheck reports whether the check list is a legacy short-circuit:
-// a single failing host_tags/host_state/architecture/vm_requirements check that must
-// be reported verbatim instead of inside the aggregated "Insufficient host resources"
-// message.
+// a single failing host_tags/host_state/architecture/vm_requirements/vm_name check
+// that must be reported verbatim instead of inside the aggregated
+// "Insufficient host resources" message.
 func isBlockingRequirementCheck(checks []models.RequirementCheckResult) bool {
 	if len(checks) != 1 || checks[0].Passed {
 		return false
 	}
 	switch checks[0].Name {
-	case checkNameHostTags, checkNameHostState, checkNameArchitecture, checkNameVmRequirements:
+	case checkNameHostTags, checkNameHostState, checkNameArchitecture, checkNameVmRequirements, checkNameVmName:
 		return true
 	}
 	return false

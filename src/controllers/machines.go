@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -829,6 +830,16 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 		defer releaseSlot()
+
+		// Per-host CPU/memory gate. A clone request carries no specs of its own — the
+		// clone inherits the source's hardware — so it is admitted count-only rather
+		// than charged an amount the request never stated.
+		releaseCapacity, err := svc.ReserveVmCapacity(ctx, "", 0, 0)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		defer releaseCapacity()
 
 		if err := svc.CloneVm(ctx, id, strings.TrimSpace(request.CloneName), strings.TrimSpace(request.DestinationPath)); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -1769,6 +1780,38 @@ func RevertVMSnapshot() restapi.ControllerHandler {
 	}
 }
 
+// vmCapacityCharge converts what a create is about to apply into the units the host
+// CPU/memory admission gate compares against: logical CPUs and MiB.
+//
+// A dimension the request does not state is charged as nothing, which makes the gate
+// admit count-only instead of blocking a create on a number we cannot read (the same
+// posture an host takes when it has no limit configured). specs.Memory follows
+// prlctl --memsize and is a plain MiB number; a suffixed "512 MB" is normalised through
+// the parser the VM inventory itself uses so both sides of the comparison agree.
+func vmCapacityCharge(specs *models.CreateVirtualMachineSpecs) (int64, float64) {
+	if specs == nil {
+		return 0, 0
+	}
+
+	var cpus int64
+	if value := strings.TrimSpace(specs.Cpu); value != "" {
+		if count, err := strconv.ParseInt(value, 10, 64); err == nil && count > 0 {
+			cpus = count
+		}
+	}
+
+	var memory float64
+	if value := strings.TrimSpace(specs.Memory); value != "" {
+		if size, err := strconv.ParseFloat(value, 64); err == nil && size > 0 {
+			memory = size
+		} else if size, err := helpers.GetSizeByteFromString(value); err == nil && size > 0 {
+			memory = helpers.ConvertByteToMegabyte(size)
+		}
+	}
+
+	return cpus, memory
+}
+
 func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
 	provider := serviceprovider.Get()
 	config := config.Get()
@@ -1811,6 +1854,15 @@ func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtu
 	}
 	defer releaseSlot()
 
+	// Same window for CPU and memory: the specs above are what CreateVm is about to
+	// apply, so they are what this create is charged for.
+	cpus, memory := vmCapacityCharge(request.PackerTemplate.Specs)
+	releaseCapacity, reserveErr := parallelsDesktopService.ReserveVmCapacity(ctx, "", cpus, memory)
+	if reserveErr != nil {
+		return nil, reserveErr
+	}
+	defer releaseCapacity()
+
 	vm, err := parallelsDesktopService.CreateVm(ctx, *template, request.PackerTemplate.DesiredState)
 	if err != nil {
 		return nil, err
@@ -1839,6 +1891,15 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 		return nil, reserveErr
 	}
 	defer releaseSlot()
+
+	// The box is configured with these specs further down (ConfigureVm below), so they
+	// are what the create will actually put on the hypervisor.
+	cpus, memory := vmCapacityCharge(request.VagrantBox.Specs)
+	releaseCapacity, reserveErr := provider.ParallelsDesktopService.ReserveVmCapacity(ctx, "", cpus, memory)
+	if reserveErr != nil {
+		return nil, reserveErr
+	}
+	defer releaseCapacity()
 
 	vagrantService := provider.VagrantService
 	parallelsDesktopService := provider.ParallelsDesktopService
@@ -1960,6 +2021,17 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 		return nil, err
 	}
 	defer releaseSlot()
+
+	// Same window for CPU and memory. Only what the request states can be charged: the
+	// manifest's own minimum requirements are known after the pull, and a create cannot
+	// be refused over a number the pull has not produced yet — the gate admits
+	// count-only and logs that it could not measure.
+	cpus, memory := vmCapacityCharge(request.CatalogManifest.Specs)
+	releaseCapacity, err := provider.ParallelsDesktopService.ReserveVmCapacity(ctx, jobID, cpus, memory)
+	if err != nil {
+		return nil, err
+	}
+	defer releaseCapacity()
 
 	parallelsDesktopService := provider.ParallelsDesktopService
 

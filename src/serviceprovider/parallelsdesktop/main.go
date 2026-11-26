@@ -108,12 +108,20 @@ type ParallelsService struct {
 	macReservations  map[string]string // operation ID -> VM ID (empty before registration)
 	// vmAdmissionMu guards the per-host VM count limit reservations: vmCreateSlots for
 	// creates/clones in flight, vmStartSlots for starts in flight (vm_capacity.go).
-	vmAdmissionMu sync.Mutex
-	vmCreateSlots map[string]struct{}
-	vmStartSlots  map[string]struct{}
+	// vmCapacitySlots holds the CPU/memory a create has been admitted for and has not
+	// applied yet; it is guarded by the same mutex because the two gates are evaluated
+	// for the same create and must not interleave a half-admitted operation.
+	vmAdmissionMu   sync.Mutex
+	vmCreateSlots   map[string]struct{}
+	vmStartSlots    map[string]struct{}
+	vmCapacitySlots map[string]capacityCharge
 	// vmInventoryFn overrides the VM inventory used by the VM count limit in tests;
 	// nil means "use the live prlctl inventory".
-	vmInventoryFn    func(basecontext.ApiContext) ([]models.ParallelsVM, error)
+	vmInventoryFn func(basecontext.ApiContext) ([]models.ParallelsVM, error)
+	// hostCapacityFn overrides the machine totals the CPU/memory admission gate
+	// compares against in tests; nil means "ask the system service", which is where
+	// GetHardwareUsage takes them from as well.
+	hostCapacityFn   func(basecontext.ApiContext) (*models.SystemHardwareInfo, error)
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -2870,6 +2878,11 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.TotalVms = CountVmsForMode(vms, constants.MAX_VMS_PER_HOST_MODE_ANY)
 	result.RunningVms = CountVmsForMode(vms, constants.MAX_VMS_PER_HOST_MODE_RUNNING)
 	result.PendingVms = s.PendingVmSlots()
+	// The CPU/memory an in-flight create has already been admitted for. Without it the
+	// snapshot only changes at the next probe, and two creates a second apart see the
+	// same free capacity; both publish 0 while the host gate is disabled.
+	result.PendingCpu = s.PendingCpu()
+	result.PendingMemory = s.PendingMemory()
 	systemSrv := system.Get()
 	systemInfo, err := systemSrv.GetHardwareInfo(ctx)
 	if err != nil {

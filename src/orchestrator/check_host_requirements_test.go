@@ -71,7 +71,7 @@ func TestCheckHostRequirementsReportsStructuredShortage(t *testing.T) {
 	request := models.CreateVirtualMachineRequest{Architecture: "arm64"}
 	specs := &models.CreateVirtualMachineSpecs{Type: "macvm", Cpu: "8", Memory: "8192", Size: 100 * 1024 * 1024}
 
-	checks := svc.checkHostRequirements(host, request, specs)
+	checks := svc.checkHostRequirements(host, request, specs, resourceView{})
 
 	hostState, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameHostState)
 	require.True(t, ok)
@@ -108,7 +108,7 @@ func TestCheckHostRequirementsReportsStructuredShortage(t *testing.T) {
 	require.EqualValues(t, MaxNumberAppleVms, *capacity.Available)
 
 	// The legacy aggregated message is preserved verbatim for the scheduling path.
-	ok, failure := svc.validateHost(host, request, specs)
+	ok, failure := svc.validateHost(host, request, specs, resourceView{})
 	require.False(t, ok)
 	require.Equal(t, "Insufficient host resources: CPU: required 8 logical CPUs, available 2; "+
 		"Memory: required 8192 MiB, available 1024 MiB; "+
@@ -123,17 +123,17 @@ func TestCheckHostRequirementsShortCircuitsStayVerbatim(t *testing.T) {
 	resources := &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}
 
 	blocked := dbmodels.OrchestratorHost{Enabled: false, State: "healthy", Architecture: "arm64", Resources: resources}
-	ok, failure := svc.validateHost(blocked, request, specs)
+	ok, failure := svc.validateHost(blocked, request, specs, resourceView{})
 	require.False(t, ok)
 	require.Equal(t, "Host is not enabled", failure.Message)
 
 	mismatched := dbmodels.OrchestratorHost{Enabled: true, State: "healthy", Architecture: "amd64", Resources: resources}
-	ok, failure = svc.validateHost(mismatched, request, specs)
+	ok, failure = svc.validateHost(mismatched, request, specs, resourceView{})
 	require.False(t, ok)
 	require.Equal(t, "Host does not have the same architecture", failure.Message)
 
 	healthy := dbmodels.OrchestratorHost{Enabled: true, State: "healthy", Architecture: "arm64", Resources: resources}
-	ok, failure = svc.validateHost(healthy, request, nil)
+	ok, failure = svc.validateHost(healthy, request, nil, resourceView{})
 	require.False(t, ok)
 	require.Equal(t, "VM resource requirements are unavailable", failure.Message)
 }
@@ -348,7 +348,7 @@ func TestCheckMachineRequirementsOldHostDiskCheckIsSkipped(t *testing.T) {
 	host := dbmodels.OrchestratorHost{Host: server.URL, Enabled: true, State: "healthy", Architecture: "arm64",
 		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
 	checks := svc.checkHostRequirements(host, models.CreateVirtualMachineRequest{Architecture: "arm64"},
-		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048", Size: 1024 * 1024 * 1024})
+		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048", Size: 1024 * 1024 * 1024}, resourceView{})
 
 	disk, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameDisk)
 	require.True(t, ok)
@@ -369,7 +369,7 @@ func TestCheckHostRequirementsVmCountLimitBlocksPlacement(t *testing.T) {
 	}
 	host := dbmodels.OrchestratorHost{Enabled: true, State: "healthy", Architecture: "arm64", Resources: resources}
 
-	checks := svc.checkHostRequirements(host, request, specs)
+	checks := svc.checkHostRequirements(host, request, specs, resourceView{})
 	vmCount, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
 	require.True(t, ok, "a host reporting a limit must carry a vm_count check")
 	require.False(t, vmCount.Passed)
@@ -381,14 +381,14 @@ func TestCheckHostRequirementsVmCountLimitBlocksPlacement(t *testing.T) {
 	// Creates already in flight consume the last slot.
 	resources.Total.TotalVms = 2
 	resources.TotalReserved.TotalVms = 1
-	checks = svc.checkHostRequirements(host, request, specs)
+	checks = svc.checkHostRequirements(host, request, specs, resourceView{})
 	vmCount, ok = requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
 	require.True(t, ok)
 	require.False(t, vmCount.Passed)
 	require.Equal(t, "VM limit: current 2, pending 1, maximum 3", vmCount.Message)
 
 	// The shortage keeps the legacy aggregated message: no new error contract.
-	ok, failure := svc.validateHost(host, request, specs)
+	ok, failure := svc.validateHost(host, request, specs, resourceView{})
 	require.False(t, ok)
 	require.Equal(t, "Insufficient host resources: VM limit: current 2, pending 1, maximum 3", failure.Message)
 }
@@ -408,19 +408,19 @@ func TestCheckHostRequirementsVmCountModeSelectsCountedSet(t *testing.T) {
 			TotalInUse:        dbmodels.HostResourceItem{TotalVms: 1},
 		}}
 
-	checks := svc.checkHostRequirements(host, request, specs)
+	checks := svc.checkHostRequirements(host, request, specs, resourceView{})
 	vmCount, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
 	require.True(t, ok)
 	require.True(t, vmCount.Passed, "stopped VMs are free capacity in running mode")
 	require.Equal(t, "VM limit: current 1, pending 0, maximum 2", vmCount.Message)
 
 	host.Resources.TotalInUse.TotalVms = 2
-	checks = svc.checkHostRequirements(host, request, specs)
+	checks = svc.checkHostRequirements(host, request, specs, resourceView{})
 	vmCount, _ = requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
 	require.False(t, vmCount.Passed)
 
 	host.Resources.MaxVmsPerHostMode = ""
-	checks = svc.checkHostRequirements(host, request, specs)
+	checks = svc.checkHostRequirements(host, request, specs, resourceView{})
 	vmCount, _ = requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
 	require.False(t, vmCount.Passed, "the default any mode counts all 40 registered VMs")
 	require.Equal(t, "VM limit: current 40, pending 0, maximum 2", vmCount.Message)
@@ -434,13 +434,13 @@ func TestCheckHostRequirementsWithoutVmLimitOmitsCheck(t *testing.T) {
 		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
 
 	checks := svc.checkHostRequirements(host, models.CreateVirtualMachineRequest{Architecture: "arm64"},
-		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"}, resourceView{})
 
 	_, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
 	require.False(t, ok)
 
 	ok, failure := svc.validateHost(host, models.CreateVirtualMachineRequest{Architecture: "arm64"},
-		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"}, resourceView{})
 	require.True(t, ok)
 	require.Nil(t, failure)
 }
@@ -595,7 +595,7 @@ func TestCheckHostRequirementsHostTagsShortCircuitBeforeDiskProbe(t *testing.T) 
 	request := models.CreateVirtualMachineRequest{Architecture: "arm64", TargetTags: []string{"pool=build", "os=sonoma"}}
 	specs := &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048", Size: 1024}
 
-	checks := svc.checkHostRequirements(host, request, specs)
+	checks := svc.checkHostRequirements(host, request, specs, resourceView{})
 	require.Len(t, checks, 1)
 	require.Equal(t, checkNameHostTags, checks[0].Name)
 	require.False(t, checks[0].Passed)
@@ -603,7 +603,7 @@ func TestCheckHostRequirementsHostTagsShortCircuitBeforeDiskProbe(t *testing.T) 
 
 	// The scheduling path reports the blocking failure verbatim, not wrapped
 	// in the aggregated "Insufficient host resources" message.
-	ok, failure := svc.validateHost(host, request, specs)
+	ok, failure := svc.validateHost(host, request, specs, resourceView{})
 	require.False(t, ok)
 	require.NotNil(t, failure)
 	require.Equal(t, "Host is missing required tags: pool=build, os=sonoma", failure.Message)
@@ -618,13 +618,13 @@ func TestCheckHostRequirementsHostTagsPassReported(t *testing.T) {
 		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
 	request := models.CreateVirtualMachineRequest{Architecture: "arm64", TargetTags: []string{"POOL=BUILD", "os=sonoma"}}
 
-	checks := svc.checkHostRequirements(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+	checks := svc.checkHostRequirements(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"}, resourceView{})
 
 	require.Equal(t, checkNameHostTags, checks[0].Name, "the tag check leads the breakdown")
 	require.True(t, checks[0].Passed)
 	require.Contains(t, checks[0].Message, "all 2 required tags")
 
-	ok, failure := svc.validateHost(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+	ok, failure := svc.validateHost(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"}, resourceView{})
 	require.True(t, ok)
 	require.Nil(t, failure)
 }
@@ -638,7 +638,7 @@ func TestCheckHostRequirementsWithoutTargetTagsOmitsHostTagsCheck(t *testing.T) 
 		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
 
 	checks := svc.checkHostRequirements(host, models.CreateVirtualMachineRequest{Architecture: "arm64"},
-		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"}, resourceView{})
 
 	_, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameHostTags)
 	require.False(t, ok)

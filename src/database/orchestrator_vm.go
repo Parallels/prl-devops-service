@@ -57,7 +57,7 @@ func (g *GormDatabase) orchHostRawByID(hostID string) (string, error) {
 func (g *GormDatabase) vmRowsForHost(hostID string) ([]models.VirtualMachine, error) {
 	var rows []models.VirtualMachine
 	if err := g.gormDB.Table("virtual_machines").Where("host_id = ?", hostID).
-		Order("rowid").Find(&rows).Error; err != nil {
+		Order(insertionOrder(g.gormDB, "virtual_machines")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return rows, nil

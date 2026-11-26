@@ -47,6 +47,38 @@ func HostIDFromSettingScope(scope string) string {
 	return strings.TrimPrefix(scope, SettingScopeHostPrefix)
 }
 
+// Node scopes address a single orchestrator replica. They exist because
+// setting_values live in the database that replicas share: one orchestrator-scope
+// row for a per-replica key would be read by all of them, which for the node id
+// means every replica claims the same identity — node-scoped job recovery
+// collapses back into a cluster-wide sweep and the reservation ledger can no
+// longer tell the replicas apart. So a per-replica value is keyed by the
+// machine id of the hardware it belongs to, exactly as a per-host value is
+// keyed by its host id.
+//
+// The machine id, not the node id, is the key: keying an identity by the
+// identity would be circular, and the machine id survives a rename.
+const SettingScopeNodePrefix = "node:"
+
+// NodeSettingScope builds the per-replica scope key for a machine id.
+func NodeSettingScope(machineID string) string {
+	return SettingScopeNodePrefix + strings.TrimSpace(machineID)
+}
+
+// IsNodeSettingScope reports whether a scope addresses a single replica.
+func IsNodeSettingScope(scope string) bool {
+	return strings.HasPrefix(scope, SettingScopeNodePrefix)
+}
+
+// MachineIDFromNodeSettingScope extracts the machine id from a "node:<id>"
+// scope ("" when the scope is not node-scoped).
+func MachineIDFromNodeSettingScope(scope string) string {
+	if !IsNodeSettingScope(scope) {
+		return ""
+	}
+	return strings.TrimPrefix(scope, SettingScopeNodePrefix)
+}
+
 // NodeSetting sources — which authority owns an applied resolver row on a
 // node: rows the orchestrator sync pushed (managed) vs. rows edited directly
 // on this node (local). Managed rows always win over local ones.

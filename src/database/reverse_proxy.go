@@ -46,7 +46,7 @@ import (
 // rpConfig loads the singleton row (first by rowid); nil,nil when absent.
 func (g *GormDatabase) rpConfig() (*models.ReverseProxy, error) {
 	var rows []models.ReverseProxy
-	if err := g.gormDB.Table("reverse_proxies").Order("rowid").Find(&rows).Error; err != nil {
+	if err := g.gormDB.Table("reverse_proxies").Order(insertionOrder(g.gormDB, "reverse_proxies")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	if len(rows) == 0 {
@@ -127,7 +127,7 @@ func (g *GormDatabase) UpdateReverseProxy(ctx basecontext.ApiContext, rp models.
 // non-filtered host path shares).
 func (g *GormDatabase) rpHosts() ([]models.ReverseProxyHost, error) {
 	var rows []models.ReverseProxyHost
-	if err := g.gormDB.Table("reverse_proxy_hosts").Order("rowid").Find(&rows).Error; err != nil {
+	if err := g.gormDB.Table("reverse_proxy_hosts").Order(insertionOrder(g.gormDB, "reverse_proxy_hosts")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return rows, nil

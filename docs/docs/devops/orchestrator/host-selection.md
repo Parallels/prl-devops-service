@@ -40,12 +40,67 @@ Every registered host is evaluated against a set of baseline criteria. A host is
 | Host state is not `healthy` | Unhealthy hosts cannot reliably run workloads |
 | Host has no resource information | Cannot make capacity decisions without resource data |
 | Host architecture does not match request | e.g. `arm64` request cannot be fulfilled by an `x86_64` host |
-| Host has insufficient CPU | Available logical CPU count is below the VM's requirement |
-| Host has insufficient memory | Available memory is below the VM's requirement |
+| Host has insufficient CPU | Available logical CPU count is below the VM's requirement — see [What "available" means](#what-available-means) |
+| Host has insufficient memory | Available memory is below the VM's requirement — see [What "available" means](#what-available-means) |
 | Host has insufficient disk space | See [Disk Space Check](#disk-space-check) below |
 | Apple VM limit reached | `macvm` type VMs are capped at a maximum per host |
+| VM name already in use | The owner already has a VM, created or in flight, under that name |
 
 Hosts that pass all checks are added to the **valid hosts** list. If no hosts pass, the request fails with HTTP 400.
+
+### What "available" means
+
+A host reports its own capacity periodically, and that snapshot is what the orchestrator caches. On its own it is a moment in the past: between two reports, several creations can each be told the same free capacity and all of them be accepted — which is how a host ends up running more VMs than it has CPUs for.
+
+So the decision consults two sources, and charges the larger of the two per dimension (CPU, memory, VM count, Apple VMs), never the sum, because both can be describing the same work in flight:
+
+| Source | Knows about | Blind to |
+|--------|--------------|----------|
+| Host-reported pending | what this host was asked to do, including creates submitted straight against it | what other replicas of the orchestrator promised |
+| Reservation ledger | what placement has promised and the host has not applied yet | a create that never went through placement |
+
+The ledger is the **capacity reservation**: a per-host row recording what a create has been charged, written in the same database transaction that re-checks the host's numbers, and released when the job running that create completes or fails. Two concurrent requests for the same host are therefore serialised where it counts — one of them is refused with the shortage spelled out (`CPU: required 6 logical CPUs, available 3`) instead of both being accepted.
+
+Two properties are worth stating explicitly, because they are what makes the ledger safe to keep:
+
+- **It charges, it does not reserve a seat.** Several creates are expected to keep landing on the same good host while it has room. A reservation never takes a host out of rotation.
+- **Reading it is free of side effects.** The pre-flight check (`POST /v1/orchestrator/machines/check`) and the host resources endpoint report the same figures a create will be measured against, without claiming anything. Only dispatching to a host claims.
+
+Reservations are released the moment their job finishes, and a reconciler reclaims one whose job has already gone away — so a crashed replica cannot leak capacity for long. The lease itself is the backstop for the case where even the job record has disappeared, and it is deliberately longer than the slowest create: a create that keeps reporting progress is alive, and freeing its capacity early would let a second create claim the same CPUs. Configuration:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `PLACEMENT_RESERVATION_ENABLED` | `true` | Set to `false` to switch the whole mechanism off — the documented rollback |
+| `PLACEMENT_RESERVATION_TTL_MINUTES` | `120` | Lease after which an unreleased reservation is reclaimable |
+| `PLACEMENT_RECONCILE_INTERVAL_SECONDS` | `30` | How often expired leases and orphaned reservations are swept |
+| `ORCHESTRATOR_NODE_ID` | machine unique id | Identifies the replica that holds a reservation; falls back to the hostname where the platform has no unique id |
+
+Placement requires the SQL data layer. On the legacy JSON data layer the ledger cannot exist, and placement reports itself disabled rather than pretending to count.
+
+The host can enforce the same arithmetic on its own side, which also catches creates submitted directly to it rather than through placement. It is opt-in and off by default, so upgrading changes nothing for deployments that oversubscribe deliberately:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VM_CPU_ADMISSION_ENABLED` | `false` | Admit or refuse creates on this host by CPU and memory |
+| `VM_CPU_OVERCOMMIT_RATIO` | `1.0` | Multiplies the capacity left for VMs after the host keeps its reserved share |
+
+While that gate is on, the host publishes what it is holding for creates that do not exist yet as `pending_cpu` / `pending_memory` on `GET /v1/orchestrator/overview/{id}/resources` — and that endpoint reports the larger of the host's figure and the orchestrator's ledger, so what you read there is exactly what a create will be measured against.
+
+### Configuring placement
+
+All six variables above are also settable through the [settings service](../settings/overview.md), which takes precedence over the environment. The two host-side ones (`VM_CPU_ADMISSION_ENABLED`, `VM_CPU_OVERCOMMIT_RATIO`) are host-scoped and take effect on the next sync; the four orchestrator-side ones are orchestrator-scoped.
+
+`PLACEMENT_RESERVATION_TTL_MINUTES` and `PLACEMENT_RECONCILE_INTERVAL_SECONDS` are read once when placement starts, so the settings API marks them `requires_restart` and the UI asks for a restart after editing them. The two booleans are read per request and apply immediately.
+
+To confirm what a running replica is actually doing, ask it:
+
+```bash
+curl -s $BASE/api/v1/config/hardware | jq '{enabled_modules, orchestrator_node_id, machine_id}'
+```
+
+`enabled_modules` lists **`placement`** when the mechanism is guarding dispatch — which means the switch is on *and* the SQL data layer is live. A replica on the legacy JSON data layer leaves it out even with the switch on, because in that mode nothing is counting and the list would be describing an intention rather than a behaviour. It is reported, never configured: it is not a member of `ENABLED_MODULES`.
+
+`orchestrator_node_id` is the name this replica stamps on its reservations and on the jobs it owns, and `machine_id` is the key that sets it — `PUT /v1/orchestrator/settings/values/ORCHESTRATOR_NODE_ID?node=<machine_id>`. With several replicas on one database, that per-replica layer is the only safe place for the value; see [per-replica values](../settings/overview.md#per-replica-values-node-machine-id).
 
 ### Disk Space Check
 
@@ -83,6 +138,8 @@ The remaining hosts are pinged (HTTP GET `/api/v1/config/health`, 2-second timeo
 ## Stage 5: Dispatch
 
 The orchestrator iterates through the sorted host list and attempts to dispatch the creation request to each host in turn, calling the host's async endpoint (`POST /machines/async`). The first host to accept (HTTP 202) wins. The resulting host job ID is registered in the job registry so that completion events (success or failure) are forwarded back to the original orchestrator job.
+
+Before a host is dispatched to — and only then — the create **claims** its capacity against that host. The claim re-reads the host's numbers and the ledger inside one per-host transaction and refuses the host if the arithmetic no longer fits, in which case the next candidate is tried. That is the moment two simultaneous requests are separated: the evaluation in Stage 1 only shortlisted hosts, the claim is what commits them. A host that was eligible a moment ago can be refused here, and that is the intended behaviour — someone else took the room.
 
 If every host in the list rejects the request, the orchestrator returns an error.
 
@@ -131,6 +188,6 @@ All registered hosts
         │ ordered list
         ▼
 ┌─────────────────────────┐
-│  Stage 5: Dispatch      │  try each host in order, stop at first HTTP 202
+│  Stage 5: Dispatch      │  claim capacity per host, try each in order, stop at first HTTP 202
 └─────────────────────────┘
 ```

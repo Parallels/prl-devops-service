@@ -19,15 +19,22 @@ import (
 )
 
 // loadRoles returns roles in insertion order. Association order is pinned to
-// rowid so join-loaded Claims/Users come back in the same order the legacy
-// engine built them (append order).
+// insertion order (see roworder.go) so join-loaded Claims/Users come back in
+// the same order the legacy engine built them (append order).
 func (g *GormDatabase) loadRoles(tx *gorm.DB, preloads ...string) ([]models.Role, error) {
 	var roles []models.Role
+
+	// The path goes through a parameter rather than the loop variable, so each
+	// preload orders its own table regardless of when GORM runs the callback.
+	order := func(path string) func(*gorm.DB) *gorm.DB {
+		return func(db *gorm.DB) *gorm.DB { return db.Order(preloadOrder(db, path)) }
+	}
+
 	q := tx
 	for _, p := range preloads {
-		q = q.Preload(p, func(db *gorm.DB) *gorm.DB { return db.Order("rowid") })
+		q = q.Preload(p, order(p))
 	}
-	if err := q.Order("rowid").Find(&roles).Error; err != nil {
+	if err := q.Order(insertionOrder(tx, "roles")).Find(&roles).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return roles, nil

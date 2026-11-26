@@ -55,7 +55,9 @@ which is handy when you need to unset something that came in from the image.
 Within the database layer, each node has its own view:
 
 - **Orchestrator node** — the `orchestrator` scope (its own values) wins over
-  its `local` layer.
+  its `local` layer. When several orchestrator replicas share this database, a
+  value addressed to one of them (`node:<machine-id>`, see below) wins over the
+  shared `orchestrator` value for that replica alone.
 - **Host node** — the `managed` layer (what the orchestrator pushed) wins over
   the `local` layer (edits made directly on the host through its own console).
   A sync never deletes local edits. They just stop taking effect, and the API
@@ -70,6 +72,7 @@ them, while a host only ever receives the rows meant for it:
 | Scope | Meaning | Who sets it |
 |-------|---------|-------------|
 | `orchestrator` | The orchestrator process's own values | Orchestrator console |
+| `node:<machine-id>` | One orchestrator replica's own values, wins over `orchestrator` for that machine | Orchestrator console |
 | `hosts` | A value for **all** hosts | Orchestrator console |
 | `host:<hostId>` | Per-host override, wins over `hosts` | Orchestrator console |
 | `local` | A node's own edits (host direct console) | The node itself |
@@ -77,6 +80,48 @@ them, while a host only ever receives the rows meant for it:
 If you write the same key in both `hosts` and `host:h1`, every host gets the
 global value and `h1` gets its own. Delete the per-host row and `h1` goes back
 to the global value. Delete both and it goes back to the catalog default.
+
+### Per-replica values (`node:<machine-id>`)
+
+Several orchestrator replicas may share one database. That is fine for values
+that are the same on every replica, and a trap for values that must not be: a
+single shared row would be read by all of them. The `node:` scope is the answer,
+keyed by the machine rather than by the process — exactly as a per-host value is
+keyed by its host.
+
+Address it with `?node=<machine-id>` on the orchestrator value endpoints:
+
+```bash
+# Which machine am I looking at? Its identity and its machine id are both here.
+curl -s $BASE/api/v1/config/hardware | jq '{orchestrator_node_id, machine_id}'
+
+# Give that machine a name of its own.
+curl -X PUT "$BASE/api/v1/orchestrator/settings/values/ORCHESTRATOR_NODE_ID?node=6E2BF1C4-1B2A" \
+  -d '{"value":"orchestrator-1"}'
+```
+
+The machine id is the hardware UUID where the platform publishes one, and the
+hostname where it does not (Windows has no platform id). It is *stable*: renaming
+a replica does not change the key you use to address it, which is what makes a
+rename safe to do through the UI.
+
+Two rules keep the scope from undoing the thing it exists for:
+
+- `ORCHESTRATOR_NODE_ID` is refused in the shared `orchestrator` scope. The
+  error names the machine you are talking to, so there is no guessing.
+- Two machines cannot be given the same identity — the write is refused and the
+  message says which machine already holds it. Two replicas answering to one
+  name would sweep each other's running jobs at boot and share one reservation
+  owner, which is precisely the failure this feature closes.
+
+`ORCHESTRATOR_NODE_ID` applies immediately: the replica adopts the name and
+re-stamps its own rows (`jobs.owner_node`, its capacity reservations) so nothing
+is left belonging to a name that no longer exists. Deleting the row returns the
+replica to the name it derives for itself.
+
+Host-scoped keys are rejected in a `node:` scope: a host pulls its values from
+the host scopes, so such a row would sit in the table looking like it had taken
+effect.
 
 ## The catalog
 
@@ -177,7 +222,7 @@ orchestrator adds the management endpoints on top. Paths are versioned under
 | GET | `/settings/definitions` | The catalog: type, default, allowed values, `applies_to`, `requires_restart` per key (static metadata) |
 | GET | `/settings/values` | Stored rows, this node's effective view (value + `source` + `shadowed_by`), drift rows and node posture |
 | PUT / DELETE | `/settings/values/{key}` | **Host only** — the host's own `local` layer |
-| PUT / DELETE | `/orchestrator/settings/values/{key}` | The orchestrator's own values (`orchestrator` scope) |
+| PUT / DELETE | `/orchestrator/settings/values/{key}` | The orchestrator's own values (`orchestrator` scope). Add `?node=<machine-id>` to address one replica's own layer |
 | PUT / DELETE | `/orchestrator/hosts/settings/values/{key}` | The value for all hosts |
 | PUT / DELETE | `/orchestrator/hosts/{hostId}/settings/values/{key}` | Per-host override |
 | GET | `/orchestrator/hosts/{hostId}/settings/values` | What that host will hold after the next sync (bundle, effective values and drift) |

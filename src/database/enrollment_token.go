@@ -30,7 +30,7 @@ const enrollmentTokenTable = "orchestrator_enrollment_tokens"
 
 func (g *GormDatabase) enrollmentTokenRows() ([]models.OrchestratorEnrollmentToken, error) {
 	var rows []models.OrchestratorEnrollmentToken
-	if err := g.gormDB.Table(enrollmentTokenTable).Order("rowid").Find(&rows).Error; err != nil {
+	if err := g.gormDB.Table(enrollmentTokenTable).Order(insertionOrder(g.gormDB, enrollmentTokenTable)).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return rows, nil

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/placement"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
@@ -88,6 +89,28 @@ func (s *OrchestratorService) GetHostResources(ctx basecontext.ApiContext, idOrN
 	if err != nil {
 		return nil, err
 	}
+	if host.Resources == nil {
+		return nil, nil
+	}
 
-	return host.Resources, nil
+	// The host publishes what it is holding for itself; the ledger holds what
+	// placement promised and the host has not applied yet. This endpoint reports
+	// the figure placement will actually subtract — the larger of the two per
+	// dimension, the same combine the scheduling decision makes rather than a
+	// sum of two overlapping views — so what an operator reads here is what a
+	// create is measured against, and a reservation is visible before the VM it
+	// pays for exists anywhere.
+	//
+	// A copy, deliberately: the cached host must keep reporting the host's own
+	// numbers, or the next scheduling decision would read its own ledger back to
+	// itself as if the host had said it.
+	resources := *host.Resources
+	service := placement.Get()
+	if service.Enabled() {
+		pending := placement.CombinePending(service.PendingForHost(ctx, host.ID), hostReportedPending(&resources))
+		resources.PendingCpu = pending.CPU
+		resources.PendingMemory = pending.Memory
+	}
+
+	return &resources, nil
 }

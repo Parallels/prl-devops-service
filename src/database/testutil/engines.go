@@ -112,16 +112,17 @@ func PostgresEngine() Engine {
 			require.NoError(t, database.RunAutoMigrate(ctx, gdb))
 			svc := database.NewGormDatabase(ctx, gdb)
 			require.NoError(t, svc.Connect(ctx))
-			// T17 portability probe — a REAL production read
-			// (configuration singleton via ORDER BY rowid; the engine
-			// carries ~30 such sites, its documented position contract
-			// — claims.go D-4). Today's engine rejects on Postgres
-			// (SQLSTATE 42703) ⇒ service-semantics legs skip WITH A
-			// LOUD T17 message. The day the #426 decision fixes the
-			// load-order contract this probe passes and every leg
-			// auto-resumes — zero test-side churn. Deliberately NOT
-			// asserting success: that would fake a green the engine
-			// has not earned.
+			// T17 portability probe — a REAL production read (the configuration
+			// singleton, one of the ~30 load-order sites whose documented
+			// position contract is claims.go D-4). Those sites asked SQLite for
+			// `rowid`, which PostgreSQL rejects (SQLSTATE 42703), so this probe
+			// used to skip every service-semantics leg with a loud T17 message.
+			// They now ask insertionOrder() (roworder.go), which answers per
+			// engine, so with a DSN present the probe passes and the legs run.
+			// If it skips again with the same message, a new query has been
+			// written against rowid directly — fix the query, not the probe.
+			// Deliberately NOT asserting success: that would fake a green the
+			// engine has not earned.
 			if _, perr := svc.GetConfiguration(ctx); perr != nil {
 				if strings.Contains(perr.Error(), "rowid") {
 					t.Skipf("T17 (production blocker — #426 decision): engine load-order queries use SQLite rowid, Postgres rejects them; service-layer legs skipped. Probe error: %v", perr)

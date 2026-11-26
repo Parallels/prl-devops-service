@@ -29,14 +29,14 @@ func TestValidateHostReportsAllResourceShortages(t *testing.T) {
 	host := dbmodels.OrchestratorHost{Host: server.URL, Enabled: true, State: "healthy", Architecture: "arm64",
 		Resources: &dbmodels.HostResources{TotalAppleVms: MaxNumberAppleVms, TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 2, MemorySize: 1024}}}
 	request := models.CreateVirtualMachineRequest{Architecture: "arm64"}
-	ok, failure := svc.validateHost(host, request, &models.CreateVirtualMachineSpecs{Type: "macvm", Cpu: "8", Memory: "8192", Size: 100 * 1024 * 1024})
+	ok, failure := svc.validateHost(host, request, &models.CreateVirtualMachineSpecs{Type: "macvm", Cpu: "8", Memory: "8192", Size: 100 * 1024 * 1024}, resourceView{})
 	require.False(t, ok)
 	require.NotNil(t, failure)
 	for _, detail := range []string{"CPU: required 8 logical CPUs, available 2", "Memory: required 8192 MiB, available 1024 MiB", "VM disk (/Users/test/Parallels): required 300 MiB, available 100 MiB", "Apple VM limit:"} {
 		require.Contains(t, failure.Message, detail)
 	}
 	// Exact capacity must remain eligible.
-	ok, failure = svc.validateHost(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "1024"})
+	ok, failure = svc.validateHost(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "1024"}, resourceView{})
 	require.True(t, ok)
 	require.Nil(t, failure)
 }
@@ -99,7 +99,7 @@ func TestValidateHostRejectsPendingMacStartsAndIncompleteInventory(t *testing.T)
 	svc := &OrchestratorService{ctx: basecontext.NewRootBaseContext()}
 	complete := false
 	host := dbmodels.OrchestratorHost{Enabled: true, State: "healthy", Architecture: "arm64", Resources: &dbmodels.HostResources{TotalAppleVms: 1, MacVMInventoryComplete: &complete, TotalReserved: dbmodels.HostResourceItem{TotalAppleVms: 1}, TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
-	ok, failure := svc.validateHost(host, models.CreateVirtualMachineRequest{Architecture: "arm64"}, &models.CreateVirtualMachineSpecs{Type: "macvm", Cpu: "2", Memory: "2048"})
+	ok, failure := svc.validateHost(host, models.CreateVirtualMachineRequest{Architecture: "arm64"}, &models.CreateVirtualMachineSpecs{Type: "macvm", Cpu: "2", Memory: "2048"}, resourceView{})
 	require.False(t, ok)
 	require.Contains(t, failure.Message, "inventory is incomplete")
 	require.Contains(t, failure.Message, "pending 1")

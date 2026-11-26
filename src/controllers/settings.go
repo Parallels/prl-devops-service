@@ -473,11 +473,12 @@ func scopedSettingDelete(ctx basecontext.ApiContext, w http.ResponseWriter, diag
 }
 
 // @Summary		Sets a setting on the orchestrator node
-// @Description	The orchestrator's own values — scope=orchestrator, the layer that wins over its local layer and shadows env/file/default for the orchestrator process. Applied live, no restart. Body: {"value":"..."}
+// @Description	The orchestrator's own values — scope=orchestrator, the layer that wins over its local layer and shadows env/file/default for the orchestrator process. Applied live, no restart. Pass ?node=<machine-id> to address one replica's own layer instead (scope node:<machine-id>, the machine_id reported by /v1/config/hardware) — required for ORCHESTRATOR_NODE_ID, which is refused in the shared scope because every replica attached to this database would otherwise read the same identity. Body: {"value":"..."}
 // @Tags			Settings
 // @Accept			json
 // @Produce		json
 // @Param			key		path		string						true	"Catalogued setting key"
+// @Param			node	query		string						false	"Machine id of the replica to address (its own layer); defaults to the shared orchestrator layer"
 // @Param			value	body		models.SettingValueRequest	true	"Override value"
 // @Success		200		{object}	models.SettingValueResponse
 // @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
@@ -496,15 +497,16 @@ func SetOrchestratorSettingValueHandler() restapi.ControllerHandler {
 		if !ok {
 			return
 		}
-		scopedSettingWrite(ctx, w, r, diag, svc, data_models.SettingScopeOrchestrator, key)
+		scopedSettingWrite(ctx, w, r, diag, svc, orchestratorWriteScope(r), key)
 	}
 }
 
 // @Summary		Removes a setting from the orchestrator node
-// @Description	Drops the orchestrator's own override (env, config file or catalog default take over again).
+// @Description	Drops the orchestrator's own override (env, config file or catalog default take over again). Accepts the same ?node=<machine-id> addressing as the write.
 // @Tags			Settings
 // @Produce		json
 // @Param			key	path	string	true	"Catalogued setting key"
+// @Param			node	query	string	false	"Machine id of the replica to address (its own layer); defaults to the shared orchestrator layer"
 // @Success		202
 // @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		404	{object}	models.ApiErrorDiagnosticsResponse
@@ -522,8 +524,24 @@ func DeleteOrchestratorSettingValueHandler() restapi.ControllerHandler {
 		if !ok {
 			return
 		}
-		scopedSettingDelete(ctx, w, diag, svc, data_models.SettingScopeOrchestrator, key)
+		scopedSettingDelete(ctx, w, diag, svc, orchestratorWriteScope(r), key)
 	}
+}
+
+// orchestratorWriteScope resolves the layer the orchestrator value endpoints
+// address. Without ?node= they behave exactly as before — the shared
+// "orchestrator" layer. With it they address one replica's own layer, keyed by
+// the machine id of the hardware that replica runs on.
+//
+// The per-replica layer is not a shortcut for "the other orchestrator": it exists
+// because setting values live in the database the replicas share, so a per-replica
+// key has to be addressed by machine or all replicas end up configured alike.
+func orchestratorWriteScope(r *http.Request) string {
+	if machine := strings.TrimSpace(r.URL.Query().Get("node")); machine != "" {
+		return data_models.NodeSettingScope(machine)
+	}
+
+	return data_models.SettingScopeOrchestrator
 }
 
 // @Summary		Sets a hosts-global setting

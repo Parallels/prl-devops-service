@@ -66,6 +66,7 @@ claims.action TEXT pk=0 notnull=0
 configurations.id TEXT pk=1 notnull=0
 jobs.id TEXT pk=1 notnull=0
 jobs.owner TEXT pk=0 notnull=0
+jobs.owner_node TEXT pk=0 notnull=0
 jobs.owner_name TEXT pk=0 notnull=0
 jobs.owner_email TEXT pk=0 notnull=0
 jobs.state TEXT pk=0 notnull=0
@@ -247,6 +248,7 @@ index api_keys.idx_api_keys_user_id(user_id)
 index catalog_managers.idx_catalog_managers_owner_id(owner_id)
 index catalog_manifests.idx_catalog_manifests_catalog_id(catalog_id)
 index jobs.idx_jobs_owner(owner)
+index jobs.idx_jobs_owner_node(owner_node)
 index jobs.idx_jobs_result_record_id(result_record_id)
 index orchestrator_enrollment_tokens.idx_orchestrator_enrollment_tokens_token(token)
 index orchestrator_hosts.idx_orchestrator_hosts_host(host)

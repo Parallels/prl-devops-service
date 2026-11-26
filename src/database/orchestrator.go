@@ -54,7 +54,7 @@ import (
 // ReverseProxy*) are never loaded (D-7 #419).
 func (g *GormDatabase) loadOrchestratorHosts() ([]models.OrchestratorHost, error) {
 	var rows []models.OrchestratorHost
-	if err := g.gormDB.Table("orchestrator_hosts").Order("rowid").Find(&rows).Error; err != nil {
+	if err := g.gormDB.Table("orchestrator_hosts").Order(insertionOrder(g.gormDB, "orchestrator_hosts")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return rows, nil
@@ -104,7 +104,7 @@ func (g *GormDatabase) orchHostUnsafe(ctx basecontext.ApiContext, idOrHost strin
 func (g *GormDatabase) rpConfigRowForHost(hostID string) (*models.ReverseProxy, error) {
 	var rows []models.ReverseProxy
 	if err := g.gormDB.Table("reverse_proxies").Where("host_id = ?", hostID).
-		Order("rowid").Find(&rows).Error; err != nil {
+		Order(insertionOrder(g.gormDB, "reverse_proxies")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	if len(rows) == 0 {
@@ -116,7 +116,7 @@ func (g *GormDatabase) rpConfigRowForHost(hostID string) (*models.ReverseProxy, 
 func (g *GormDatabase) rpHostRowsForHost(hostID string) ([]*models.ReverseProxyHost, error) {
 	var rows []models.ReverseProxyHost
 	if err := g.gormDB.Table("reverse_proxy_hosts").Where("host_id = ?", hostID).
-		Order("rowid").Find(&rows).Error; err != nil {
+		Order(insertionOrder(g.gormDB, "reverse_proxy_hosts")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	if len(rows) == 0 {

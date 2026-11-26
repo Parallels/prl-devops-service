@@ -27,6 +27,11 @@ func MapHostResourcesFromSystemUsageResponse(m models.SystemUsageResponse) data_
 	result.Total.TotalVms = m.TotalVms
 	result.TotalInUse.TotalVms = m.RunningVms
 	result.TotalReserved.TotalVms = m.PendingVms
+	// Host-published in-flight CPU/memory. Cached as published: the orchestrator's own
+	// reservations stay in their own table and are combined with max(), never summed
+	// into these, or one create known to both sides would be charged twice.
+	result.PendingCpu = m.PendingCpu
+	result.PendingMemory = m.PendingMemory
 
 	return result
 }
@@ -74,6 +79,8 @@ func MapSystemUsageResponseFromHostResources(m data_models.HostResources) *model
 		TotalVms:               m.Total.TotalVms,
 		RunningVms:             m.TotalInUse.TotalVms,
 		PendingVms:             m.TotalReserved.TotalVms,
+		PendingCpu:             m.PendingCpu,
+		PendingMemory:          m.PendingMemory,
 		CpuType:                m.CpuType,
 		CpuBrand:               m.CpuBrand,
 		SystemReserved:         MapSystemUsageItemFromHostResourceItem(&m.SystemReserved),

@@ -45,14 +45,17 @@ type SettingSyncStateResponse struct {
 // hidden by a higher one (e.g. a host-local edit shadowed by the
 // orchestrator-managed value).
 type SettingEffectiveEntry struct {
-	Key               string  `json:"key"`
-	Type              string  `json:"type"`
-	DefaultValue      string  `json:"default_value"`
-	ValidValues       string  `json:"valid_values,omitempty"`
-	Description       string  `json:"description"`
-	AppliesTo         string  `json:"applies_to"`
-	RequiresRestart   bool    `json:"requires_restart"`
-	ManagedValue      *string `json:"managed_value,omitempty"`
+	Key             string  `json:"key"`
+	Type            string  `json:"type"`
+	DefaultValue    string  `json:"default_value"`
+	ValidValues     string  `json:"valid_values,omitempty"`
+	Description     string  `json:"description"`
+	AppliesTo       string  `json:"applies_to"`
+	RequiresRestart bool    `json:"requires_restart"`
+	ManagedValue    *string `json:"managed_value,omitempty"`
+	// NodeValue is the override addressed to this replica alone
+	// (scope "node:<machine-id>"). Only the orchestrator view carries it.
+	NodeValue         *string `json:"node_value,omitempty"`
 	OrchestratorValue *string `json:"orchestrator_value,omitempty"`
 	HostsValue        *string `json:"hosts_value,omitempty"`
 	HostValue         *string `json:"host_value,omitempty"`

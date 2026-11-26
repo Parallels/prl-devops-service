@@ -77,7 +77,7 @@ func (g *GormDatabase) enrichJobs(ctx basecontext.ApiContext, jobs []models.Job)
 
 func (g *GormDatabase) jobRows() ([]models.Job, error) {
 	var rows []models.Job
-	if err := g.gormDB.Table("jobs").Order("rowid").Find(&rows).Error; err != nil {
+	if err := g.gormDB.Table("jobs").Order(insertionOrder(g.gormDB, "jobs")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return rows, nil
@@ -219,12 +219,115 @@ func (g *GormDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...c
 }
 
 func (g *GormDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
+	// nil scope: the whole table, which is the right reading while exactly one
+	// node owns the database.
+	g.recoverOngoingJobs(ctx, nil)
+}
+
+// RecoverOngoingJobsForNode fails only this replica's ongoing jobs. Several
+// replicas share one database, and the cluster-wide version turns a rolling
+// restart or a scale-up into an outage for work the *other* replica is still
+// doing — including the VM creates whose capacity reservations it is holding.
+//
+// Rows with no owner are included: they predate the field, and a job nobody owns
+// is a job nobody will ever finish. A job belonging to a replica that never
+// comes back is not stranded either — the stale-job watcher reaps it on its
+// usual timeout.
+//
+// nodeIDs is the caller's identity plus its aliases (helpers.NodeIDAliases), so
+// that changing how identity is derived does not turn a replica's own earlier
+// rows into another node's work: rows written before identity moved from the
+// hostname to the machine's unique id would otherwise be left running with nobody
+// to finish them.
+//
+// Deliberately not on DatabaseService (R-1 keeps that interface closed), reached
+// from startup by a local assertion, exactly as StartStaleJobWatcher is.
+func (g *GormDatabase) RecoverOngoingJobsForNode(ctx basecontext.ApiContext, nodeIDs []string) {
+	ids := usableNodeIDs(nodeIDs)
+	if len(ids) == 0 {
+		// An unidentifiable replica cannot scope anything; falling back to the
+		// cluster-wide sweep would be the silent, destructive reading of this.
+		ctx.LogWarnf("[Database] No node identity, skipping ongoing job recovery")
+
+		return
+	}
+
+	g.recoverOngoingJobs(ctx, ids)
+}
+
+// usableNodeIDs drops the empties and repeats a caller may hand over — a
+// hostname that equals the primary id, an unset pin — so the WHERE clause does
+// not grow conditions that can only restate each other.
+func usableNodeIDs(nodeIDs []string) []string {
+	seen := make(map[string]bool, len(nodeIDs))
+	usable := make([]string, 0, len(nodeIDs))
+
+	for _, id := range nodeIDs {
+		trimmed := strings.TrimSpace(id)
+		if trimmed == "" || seen[trimmed] {
+			continue
+		}
+
+		seen[trimmed] = true
+		usable = append(usable, trimmed)
+	}
+
+	return usable
+}
+
+// RenameJobOwner retires one of this replica's identities across the jobs it
+// stamped. A rename that leaves rows behind is not cosmetic: recovery matches on
+// owner_node, so jobs written under the old name belong to a node that no longer
+// exists — nobody will ever finish them, and the reservation ledger will keep
+// attributing their capacity to a replica nobody can name.
+//
+// Idempotent by construction (WHERE owner_node = from), which is what makes the
+// two-table rename survivable: the caller flips its in-process identity first and
+// then updates each table, so a crash between the two is repaired by running the
+// rename again rather than by a transaction spanning two bounded contexts.
+//
+// An empty or unchanged identity is refused, not ignored: an empty `from` would
+// match the ownerless rows that RecoverOngoingJobsForNode deliberately adopts and
+// silently re-attribute them to this node.
+//
+// Deliberately not on DatabaseService (R-1), reached by local assertion.
+func (g *GormDatabase) RenameJobOwner(ctx basecontext.ApiContext, from, to string) error {
+	if !g.IsConnected() {
+		return interfaces.ErrDatabaseNotConnected
+	}
+
+	from, to = strings.TrimSpace(from), strings.TrimSpace(to)
+	if from == "" || to == "" || from == to {
+		return interfaces.ErrNodeIdentityUnusable
+	}
+
+	res := g.gormDB.Table("jobs").Where("owner_node = ?", from).Update("owner_node", to)
+	if res.Error != nil {
+		return mapGormError(res.Error, nil, nil)
+	}
+
+	ctx.LogInfof("[Database] Retired node identity %q -> %q across %d job(s)", from, to, res.RowsAffected)
+
+	return nil
+}
+
+func (g *GormDatabase) recoverOngoingJobs(ctx basecontext.ApiContext, nodeIDs []string) {
 	if !g.IsConnected() {
 		return
 	}
-	res := g.gormDB.Table("jobs").Where("state IN ?", []constants.JobState{
+	query := g.gormDB.Table("jobs").Where("state IN ?", []constants.JobState{
 		constants.JobStateRunning, constants.JobStatePending,
-	}).Updates(map[string]interface{}{
+	})
+	if len(nodeIDs) > 0 {
+		ownership := "owner_node = ''"
+		args := make([]interface{}, 0, len(nodeIDs))
+		for _, id := range nodeIDs {
+			ownership += " OR owner_node = ?"
+			args = append(args, id)
+		}
+		query = query.Where(ownership, args...)
+	}
+	res := query.Updates(map[string]interface{}{
 		"state":      constants.JobStateFailed,
 		"error":      "Service crashed or was restarted",
 		"updated_at": g.jobsStamp(),

@@ -35,14 +35,18 @@ func (m *MachineRequirements) GetSpecsType() string {
 // CheckMachineRequirementsRequest is the body of POST /v1/orchestrator/machines/check.
 // Exactly one of CatalogId or Requirements must be provided.
 type CheckMachineRequirementsRequest struct {
-	CatalogId        string               `json:"catalog_id,omitempty"`
-	Version          string               `json:"version,omitempty"`
-	Architecture     string               `json:"architecture,omitempty"`
-	Connection       string               `json:"connection,omitempty"`
-	CatalogManagerId string               `json:"catalog_manager_id,omitempty"`
-	HostId           string               `json:"host_id,omitempty"`
-	Owner            string               `json:"owner,omitempty"`
-	Requirements     *MachineRequirements `json:"requirements,omitempty"`
+	CatalogId        string `json:"catalog_id,omitempty"`
+	Version          string `json:"version,omitempty"`
+	Architecture     string `json:"architecture,omitempty"`
+	Connection       string `json:"connection,omitempty"`
+	CatalogManagerId string `json:"catalog_manager_id,omitempty"`
+	HostId           string `json:"host_id,omitempty"`
+	Owner            string `json:"owner,omitempty"`
+	// MachineName optionally names the VM the caller intends to create. With it
+	// the pre-flight reports the same vm_name collision the create would refuse
+	// on; without it the name check is simply not evaluated, as before.
+	MachineName  string               `json:"machine_name,omitempty"`
+	Requirements *MachineRequirements `json:"requirements,omitempty"`
 	// TargetTags mirrors the create request's hard host-tag placement
 	// constraint: only hosts carrying ALL listed tags (case-insensitive)
 	// pass the host_tags check. Absent means no tag constraint.

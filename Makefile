@@ -41,6 +41,7 @@ help:
 	# make build
 	# make generate-swagger
 	# make generate-postman
+	# make dev-services-up / dev-services-down
 
 .PHONY: version
 version:
@@ -334,3 +335,13 @@ else
 	docker start $(PACKAGE_NAME)-linter --attach; \
 	fi
 endif
+
+DEV_SERVICES_COMPOSE ?= developer/docker-compose.dev.yml
+
+.PHONY: dev-services-up
+dev-services-up:
+	docker compose -f $(DEV_SERVICES_COMPOSE) up -d
+
+.PHONY: dev-services-down
+dev-services-down:
+	docker compose -f $(DEV_SERVICES_COMPOSE) down

@@ -11,9 +11,11 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/handlers"
+	"github.com/Parallels/prl-devops-service/placement"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/settings"
@@ -96,6 +98,39 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	s.hwQueue = newHardwareUpdateQueue(s)
 	pdfmHandler.SetHardwareEnqueuer(s.hwQueue)
 	s.hwQueue.Start(s.ctx)
+
+	// Capacity reservations. The ledger lives in the SQL database so that every
+	// replica of this service decides from the same numbers; with no SQL handle
+	// (legacy JSON database) placement reports itself disabled and every hook
+	// below is a no-op, which is also the documented rollback.
+	placementSvc, _ := placement.InitService(s.ctx)
+	// What to do once a reservation is settled: ask that one host for its real
+	// numbers again, through the deduplicating queue rather than a full-cluster
+	// reload. Injected as a function so placement never has to know a host
+	// service exists.
+	placementSvc.SetRefreshHostHook(func(ctx basecontext.ApiContext, hostID string) error {
+		s.queueHostRefresh(hostID)
+		return nil
+	})
+	placementSvc.StartReconciler(s.ctx)
+
+	// Host jobs are dispatched by whichever replica wins a create but reported
+	// back by whichever replica happens to hold that host's socket, so the link
+	// between the two has to outlive a process.
+	s.wireJobLinks(s.ctx)
+
+	// A reservation is owed until the work is genuinely finished, and only the
+	// job manager knows when that is. A function value again, for the same
+	// reason: jobs must not import this package to tell it.
+	jobs.SetJobTerminalHook(func(jobID string, succeeded bool) {
+		outcome := placement.OutcomeFailed
+		if succeeded {
+			outcome = placement.OutcomeSucceeded
+		}
+		if err := placementSvc.ReleaseJob(s.ctx, jobID, outcome); err != nil {
+			s.ctx.LogWarnf("[Placement] Capacity not released for job %s (lease will reclaim): %v", jobID, err)
+		}
+	})
 
 	// Initial refresh of connections
 	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {
@@ -225,6 +260,8 @@ func (s *OrchestratorService) Stop() {
 	if s.hwQueue != nil {
 		s.hwQueue.Stop()
 	}
+
+	placement.Get().StopReconciler()
 
 	manager := GetHostWebSocketManager()
 	if manager != nil {

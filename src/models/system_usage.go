@@ -6,11 +6,17 @@ type SystemUsageResponse struct {
 	// MaxVmsPerHostMode selects the counted set: "any" (TotalVms) or "running"
 	// (RunningVms). TotalVms counts every VM registered on the host, RunningVms the
 	// ones occupying a hypervisor slot, PendingVms the creates/starts in flight.
-	MaxVmsPerHost            int64               `json:"max_vms_per_host,omitempty"`
-	MaxVmsPerHostMode        string              `json:"max_vms_per_host_mode,omitempty"`
-	TotalVms                 int64               `json:"total_vms,omitempty"`
-	RunningVms               int64               `json:"running_vms,omitempty"`
-	PendingVms               int64               `json:"pending_vms,omitempty"`
+	MaxVmsPerHost     int64  `json:"max_vms_per_host,omitempty"`
+	MaxVmsPerHostMode string `json:"max_vms_per_host_mode,omitempty"`
+	TotalVms          int64  `json:"total_vms,omitempty"`
+	RunningVms        int64  `json:"running_vms,omitempty"`
+	PendingVms        int64  `json:"pending_vms,omitempty"`
+	// PendingCpu and PendingMemory are what the creates in flight on this host have
+	// been admitted for and have not put on the hypervisor yet. They are additive: a
+	// host without the CPU/memory admission gate publishes nothing, and the
+	// orchestrator combines them with its own reservations by max(), never by summing.
+	PendingCpu               int64               `json:"pending_cpu,omitempty"`
+	PendingMemory            float64             `json:"pending_memory,omitempty"`
 	MacVMInventoryComplete   *bool               `json:"mac_vm_inventory_complete,omitempty"`
 	CpuType                  string              `json:"cpu_type,omitempty"`
 	CpuBrand                 string              `json:"cpu_brand,omitempty"`
@@ -33,6 +39,17 @@ type SystemUsageResponse struct {
 	// SqlDatabaseType is the live SQL engine ("sqlite" | "postgres");
 	// empty means the legacy JSON store is in use (no sql_database module).
 	SqlDatabaseType string `json:"sql_database_type,omitempty"`
+	// OrchestratorNodeID is this replica's identity — what reservations and
+	// jobs.owner_node are stamped with. Orchestrator nodes only.
+	OrchestratorNodeID string `json:"orchestrator_node_id,omitempty"`
+	// MachineID is the stable identifier of this machine that its identity is
+	// derived from: the hardware UUID where the platform publishes one, the
+	// hostname where it does not. It is also the key an operator must use to
+	// give *this* replica an identity of its own through the settings service
+	// (scope "node:<machine_id>"), which is why it is reported next to the
+	// identity rather than left to be guessed. Neither is a secret: the same
+	// value is what telemetry reports as hardware_id.
+	MachineID string `json:"machine_id,omitempty"`
 }
 
 type SystemUsageItem struct {

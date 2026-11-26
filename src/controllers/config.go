@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -309,6 +310,17 @@ func GetHardwareInfo() restapi.ControllerHandler {
 
 		hardwareInfo.EnabledModules = serviceprovider.EnabledModulesForReport()
 		hardwareInfo.SqlDatabaseType = serviceprovider.GetSQLDatabaseType()
+
+		// Replica identity, orchestrator nodes only: a host answering this is not
+		// a replica, and an identity field on its response would only invite the
+		// question of why its node id is a hostname. Both values are reported
+		// because the second is the key for the first — a per-machine identity is
+		// set through the settings service under scope "node:<machine_id>", and
+		// an operator cannot type a machine id they have no way to read.
+		if cfg.IsOrchestrator() {
+			hardwareInfo.OrchestratorNodeID = helpers.NodeID()
+			hardwareInfo.MachineID = helpers.MachineID()
+		}
 
 		if cfg.IsReverseProxyEnabled() {
 			hardwareInfo.IsReverseProxyEnabled = true

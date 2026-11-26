@@ -74,6 +74,12 @@ const (
 	CORS_MODE                      = "cors"
 	VM_FORCE_CACHE_REFRESH         = true
 	SQL_DATABASE_MODE              = "sql_database" // runtime-derived: the SQL (GORM) backend is the live data layer
+	// PLACEMENT_MODE is runtime-derived too, and deliberately absent from
+	// VALID_MODULES: it reports that capacity admission is guarding dispatch, so
+	// it cannot be switched on by listing it in ENABLED_MODULES (which is what
+	// VALID_MODULES gates) — only by PLACEMENT_RESERVATION_ENABLED *and* the SQL
+	// data layer both being in place. Same reasoning as sql_database.
+	PLACEMENT_MODE = "placement"
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
 )

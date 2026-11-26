@@ -42,7 +42,7 @@ import (
 
 func (g *GormDatabase) loadPackerTemplates() ([]models.PackerTemplate, error) {
 	var rows []models.PackerTemplate
-	err := g.gormDB.Table("packer_templates").Order("rowid").Find(&rows).Error
+	err := g.gormDB.Table("packer_templates").Order(insertionOrder(g.gormDB, "packer_templates")).Find(&rows).Error
 	if err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}

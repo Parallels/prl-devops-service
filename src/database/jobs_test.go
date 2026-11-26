@@ -257,3 +257,132 @@ func TestSQLJobs_WatcherBody(t *testing.T) {
 		t.Fatal("closed cancel")
 	}
 }
+
+func TestSQLJobs_RecoverByNode(t *testing.T) {
+	g := newSQLDB(t)
+	root := tplRootCtx()
+	for _, j := range []models.Job{
+		{ID: "nd-a1", OwnerNode: "node-a", State: constants.JobStateRunning},
+		{ID: "nd-a2", OwnerNode: "node-a", State: constants.JobStatePending},
+		{ID: "nd-a-old", OwnerNode: "node-a-former-name", State: constants.JobStateRunning},
+		{ID: "nd-b1", OwnerNode: "node-b", State: constants.JobStateRunning},
+		{ID: "nd-legacy", State: constants.JobStateRunning},
+		{ID: "nd-done", OwnerNode: "node-a", State: constants.JobStateCompleted, Result: "ok"},
+	} {
+		if _, err := g.CreateJob(root, j); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Recovering must not touch another replica's work: that job is being run
+	// over there right now, and the create it describes is holding capacity for
+	// a VM that exists. The list also carries an empty, a blank and a repeat,
+	// which must not widen the scope or the statement.
+	g.RecoverOngoingJobsForNode(root, []string{"node-a", "", "   ", "node-a"})
+
+	want := map[string]constants.JobState{
+		"nd-a1":     constants.JobStateFailed, // mine, and genuinely abandoned
+		"nd-a2":     constants.JobStateFailed,
+		"nd-legacy": constants.JobStateFailed, // predates the field: nobody's is everybody's
+		"nd-a-old":  constants.JobStateRunning,
+		"nd-b1":     constants.JobStateRunning,
+		"nd-done":   constants.JobStateCompleted,
+	}
+	jobs, _ := g.GetJobs(root)
+	for _, j := range jobs {
+		if state, ok := want[j.ID]; ok && j.State != state {
+			t.Fatalf("recover by node %s: state %q want %q", j.ID, j.State, state)
+		}
+	}
+
+	// An identity this replica used before is still its own work. Without the
+	// alias, a replica that had stamped rows under its hostname before identity
+	// moved to the machine id would read them as someone else's and leave them
+	// running with nobody to finish them.
+	g.RecoverOngoingJobsForNode(root, []string{"node-a", "node-a-former-name"})
+	jobs, _ = g.GetJobs(root)
+	for _, j := range jobs {
+		if j.ID == "nd-a-old" && j.State != constants.JobStateFailed {
+			t.Fatalf("former identity not treated as own work: %+v", j)
+		}
+	}
+
+	// An unidentifiable replica recovers nothing at all. Sweeping the cluster
+	// because the node id failed to resolve is the destructive reading of this
+	// method, and the stale-job watcher will still reap what is left.
+	g.RecoverOngoingJobsForNode(root, []string{})
+	g.RecoverOngoingJobsForNode(root, []string{"", "  "})
+	jobs, _ = g.GetJobs(root)
+	for _, j := range jobs {
+		if j.ID == "nd-b1" && j.State != constants.JobStateRunning {
+			t.Fatalf("empty node id swept a foreign job: %+v", j)
+		}
+	}
+}
+
+// TestSQLJobs_RenameOwner covers the bookkeeping behind a node rename through the
+// settings service. A rename that leaves rows under the retired name is not
+// cosmetic: recovery matches on owner_node, so those jobs belong to a node that no
+// longer exists and nobody will ever finish them.
+func TestSQLJobs_RenameOwner(t *testing.T) {
+	g := newSQLDB(t)
+	root := tplRootCtx()
+	for _, j := range []models.Job{
+		{ID: "rn-current", OwnerNode: "node-a", State: constants.JobStateRunning},
+		{ID: "rn-former", OwnerNode: "node-a-old", State: constants.JobStateRunning},
+		{ID: "rn-foreign", OwnerNode: "node-b", State: constants.JobStateRunning},
+		{ID: "rn-ownerless", State: constants.JobStateRunning},
+	} {
+		if _, err := g.CreateJob(root, j); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	owner := func(id string) string {
+		t.Helper()
+		job, err := g.GetJob(root, id)
+		if err != nil {
+			t.Fatalf("get %s: %v", id, err)
+		}
+
+		return job.OwnerNode
+	}
+
+	if err := g.RenameJobOwner(root, "node-a-old", "node-a"); err != nil {
+		t.Fatal(err)
+	}
+	if got := owner("rn-former"); got != "node-a" {
+		t.Fatalf("renamed row: owner %q", got)
+	}
+
+	// A rename moves this replica's rows and nothing else. Reaching into another
+	// replica's work would attribute live creates to the wrong owner, and the
+	// ownerless rows are the ones recovery deliberately adopts — an empty `from`
+	// would have matched both.
+	if got := owner("rn-foreign"); got != "node-b" {
+		t.Fatalf("foreign row touched: owner %q", got)
+	}
+	if got := owner("rn-ownerless"); got != "" {
+		t.Fatalf("ownerless row re-attributed: owner %q", got)
+	}
+
+	// The refusals. Blank-looking arguments are the dangerous ones, not the
+	// harmless no-ops they appear to be.
+	for _, refusal := range [][2]string{{"", "node-a"}, {"   ", "node-a"}, {"node-a", ""}, {"node-a", "   "}, {"node-a", "node-a"}} {
+		if err := g.RenameJobOwner(root, refusal[0], refusal[1]); !errors.Is(err, interfaces.ErrNodeIdentityUnusable) {
+			t.Fatalf("rename %q -> %q: want refusal, got %v", refusal[0], refusal[1], err)
+		}
+	}
+
+	// Idempotent, which is what makes a rename interrupted between the two tables
+	// safe to simply run again.
+	if err := g.RenameJobOwner(root, "node-a-old", "node-a"); err != nil {
+		t.Fatalf("re-run of a finished rename: %v", err)
+	}
+	if err := g.RenameJobOwner(root, "node-b", "node-c"); err != nil {
+		t.Fatal(err)
+	}
+	if got := owner("rn-foreign"); got != "node-c" {
+		t.Fatalf("second rename: owner %q", got)
+	}
+}

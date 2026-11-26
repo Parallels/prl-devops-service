@@ -8,6 +8,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -82,6 +83,7 @@ func (jms *JobManagerService) Stop() error {
 func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOperation string, action string) (*data_models.Job, error) {
 	job := data_models.Job{
 		Owner:        owner,
+		OwnerNode:    helpers.NodeID(),
 		State:        constants.JobStatePending,
 		JobType:      jobType,
 		JobOperation: jobOperation,
@@ -102,6 +104,7 @@ func (jms *JobManagerService) CreateOrchestratorJob(owner string, jobType string
 	job := data_models.Job{
 		ID:                externalJobID,
 		Owner:             owner,
+		OwnerNode:         helpers.NodeID(),
 		State:             constants.JobStatePending,
 		JobType:           jobType,
 		JobOperation:      jobOperation,
@@ -294,6 +297,9 @@ func (jms *JobManagerService) MarkJobComplete(jobID string, result string) error
 		return err
 	}
 
+	// Before the pacing sleeps: capacity is owed back as soon as the work is
+	// done, not when the UI has finished showing the last progress line.
+	jms.notifyJobTerminal(jobID, true)
 	jms.emitEvent("JOB_UPDATED", job)
 	// Applying a slowdown to allow other messages for this job
 	// to be processed before the "completed" event is emitted,
@@ -328,6 +334,7 @@ func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result str
 		return err
 	}
 
+	jms.notifyJobTerminal(jobID, true)
 	jms.emitEvent("JOB_UPDATED", job)
 	// Applying a slowdown to allow other messages for this job
 	// to be processed before the "completed" event is emitted,
@@ -358,6 +365,9 @@ func (jms *JobManagerService) MarkJobError(jobId string, jobErr error) error {
 		return err
 	}
 
+	// A failed create is exactly as entitled to its capacity back as a successful
+	// one is — the difference is only in what the host is asked to report.
+	jms.notifyJobTerminal(jobId, false)
 	jms.emitEvent("JOB_UPDATED", job)
 	return nil
 }

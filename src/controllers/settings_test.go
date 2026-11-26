@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
@@ -67,5 +68,36 @@ func TestSettingValueRequestMapsBody(t *testing.T) {
 	}
 	if request.Value != " hello " {
 		t.Fatalf("value must be passed through verbatim for service-side normalization, got %q", request.Value)
+	}
+}
+
+// The orchestrator value endpoints gained one way to address a single replica.
+// The default must be untouched — every existing caller and UI still writes the
+// shared layer — and ?node= must land on the per-replica layer keyed by the
+// machine id, which is the only place a per-replica identity may be stored.
+func TestOrchestratorWriteScopeAddressing(t *testing.T) {
+	cases := []struct {
+		name   string
+		target string
+		want   string
+	}{
+		{"default stays the shared layer",
+			"/api/v1/orchestrator/settings/values/LOG_LEVEL", data_models.SettingScopeOrchestrator},
+		{"empty node is not a machine",
+			"/api/v1/orchestrator/settings/values/LOG_LEVEL?node=", data_models.SettingScopeOrchestrator},
+		{"blank node is not a machine either",
+			"/api/v1/orchestrator/settings/values/LOG_LEVEL?node=%20%20", data_models.SettingScopeOrchestrator},
+		{"one replica by machine id",
+			"/api/v1/orchestrator/settings/values/ORCHESTRATOR_NODE_ID?node=6E2BF1C4-1B2A",
+			"node:6E2BF1C4-1B2A"},
+		{"space around the id is not a different machine",
+			"/api/v1/orchestrator/settings/values/ORCHESTRATOR_NODE_ID?node=%206E2BF1C4-1B2A%20",
+			"node:6E2BF1C4-1B2A"},
+	}
+
+	for _, tc := range cases {
+		if got := orchestratorWriteScope(httptest.NewRequest(http.MethodPut, tc.target, nil)); got != tc.want {
+			t.Errorf("%s: scope %q, want %q", tc.name, got, tc.want)
+		}
 	}
 }

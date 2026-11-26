@@ -79,9 +79,10 @@ func GetSQLDatabaseType() string {
 // EnabledModulesForReport returns the operator-facing module list for
 // reporting surfaces (hardware endpoint, host records). It mirrors
 // GetEnabledModules and appends the runtime-derived sql_database module when
-// a SQL connection is live. Deliberately NOT persisted through
-// EnableModule/DisableModule: sql_database reflects which backend the process
-// opened, not something operators toggle.
+// a SQL connection is live, and placement when capacity admission is
+// enforcing. Deliberately NOT persisted through
+// EnableModule/DisableModule: both reflect what the process is actually doing,
+// not something operators toggle.
 func EnabledModulesForReport() []string {
 	cfg := config.Get()
 	if cfg == nil {
@@ -90,6 +91,15 @@ func EnabledModulesForReport() []string {
 	modules := cfg.GetEnabledModules()
 	if GetSQLDatabaseType() != "" {
 		modules = append(modules, constants.SQL_DATABASE_MODE)
+		// Placement is reported when it is actually guarding dispatch, not when
+		// its flag is merely true: without the SQL data layer the reservation
+		// ledger cannot exist and admission is skipped, so an operator reading
+		// this list to find out whether the over-commit bug is closed would be
+		// told "yes" by a switch with no effect. Same runtime-derived reasoning
+		// as sql_database above, and the same reason it is not in VALID_MODULES.
+		if cfg.IsOrchestrator() && cfg.PlacementReservationEnabled() {
+			modules = append(modules, constants.PLACEMENT_MODE)
+		}
 	}
 	return modules
 }

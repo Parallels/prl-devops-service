@@ -169,16 +169,26 @@ func strPtr(v string) *string { return &v }
 
 // OrchestratorNodeView resolves the effective config of THIS orchestrator
 // process: managed (only when a local host agent pushed bundle exists here) >
-// orchestrator-scope > local > env > file > default.
+// node-scope > orchestrator-scope > local > env > file > default.
 func (s *Service) OrchestratorNodeView() []apimodels.SettingEffectiveEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	orch := s.values[models.SettingScopeOrchestrator]
+	// The replica's own layer only exists when this machine can be identified;
+	// resolving it against an empty scope would show a phantom layer fed by
+	// whoever wrote the last "node:" row in the table.
+	var node map[string]string
+	if s.nodeScope != "" {
+		node = s.values[s.nodeScope]
+	}
 	entries := make([]apimodels.SettingEffectiveEntry, 0, len(s.definitions))
 	for _, def := range s.definitions {
 		entry := newEntry(&def)
 		if v, ok := s.managed[def.Key]; ok {
 			entry.ManagedValue = strPtr(v)
+		}
+		if v, ok := node[def.Key]; ok {
+			entry.NodeValue = strPtr(v)
 		}
 		if v, ok := orch[def.Key]; ok {
 			entry.OrchestratorValue = strPtr(v)
@@ -190,6 +200,7 @@ func (s *Service) OrchestratorNodeView() []apimodels.SettingEffectiveEntry {
 		entry.Effective, entry.Source = resolveLayers(def.Key, def.DefaultValue,
 			[]layerSource{
 				{entry.ManagedValue, SourceManaged},
+				{entry.NodeValue, SourceNode},
 				{entry.OrchestratorValue, SourceOrchestrator},
 				{entry.LocalValue, SourceLocal},
 			})
@@ -283,11 +294,17 @@ func newEntry(def *models.SettingDefinition) apimodels.SettingEffectiveEntry {
 // UI can flag host-local edits that currently have no effect.
 func annotateShadowing(entry *apimodels.SettingEffectiveEntry) {
 	if entry.ManagedValue != nil {
-		if entry.OrchestratorValue != nil {
+		if entry.NodeValue != nil || entry.OrchestratorValue != nil || entry.LocalValue != nil {
 			entry.ShadowedBy = SourceManaged
 		}
-		if entry.LocalValue != nil && entry.ShadowedBy == "" {
-			entry.ShadowedBy = SourceManaged
+		return
+	}
+	if entry.NodeValue != nil {
+		// A replica's own value hiding the shared one is not a mistake, but it is
+		// worth showing: it is the layer that makes two replicas attached to one
+		// database behave differently.
+		if entry.OrchestratorValue != nil || entry.LocalValue != nil {
+			entry.ShadowedBy = SourceNode
 		}
 		return
 	}

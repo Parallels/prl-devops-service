@@ -24,7 +24,7 @@ import (
 
 func loadApiKeys(tx *gorm.DB) ([]models.ApiKey, error) {
 	var keys []models.ApiKey
-	if err := tx.Order("rowid").Find(&keys).Error; err != nil {
+	if err := tx.Order(insertionOrder(tx, "api_keys")).Find(&keys).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return keys, nil

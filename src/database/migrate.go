@@ -28,6 +28,9 @@ func AllGormModels() []interface{} {
 		// model list additions ride the domain that owns them (header rule).
 		&models.SettingDefinition{}, &models.SettingValue{}, &models.SettingSyncState{},
 		&models.NodeSetting{}, &models.SettingMeta{},
+		// Placement domain (pending capacity reservations + durable host job
+		// links) — model list additions ride the domain that owns them.
+		&models.ResourceReservation{}, &models.PlacementGuard{}, &models.JobLink{},
 	}
 }
 

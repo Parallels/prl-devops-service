@@ -62,10 +62,18 @@ func NewGormDatabase(ctx basecontext.ApiContext, gormDB *gorm.DB) *GormDatabase 
 // from the live Dialector — the single branching source for driver-specific
 // SQL (SaveAs snapshots today; #425 family of needs tomorrow).
 func (g *GormDatabase) dialect() string {
-	if g.gormDB == nil || g.gormDB.Dialector == nil {
+	return dialectOf(g.gormDB)
+}
+
+// dialectOf is dialect() for a handle that is not the store's own — a
+// transaction scope handed to a callback shares the parent's Dialector, and
+// ordering helpers are called with those. Kept next to dialect() so there
+// remains exactly one place that asks the driver what it is.
+func dialectOf(db *gorm.DB) string {
+	if db == nil || db.Dialector == nil {
 		return ""
 	}
-	switch g.gormDB.Dialector.(type) {
+	switch db.Dialector.(type) {
 	case *sqlitedrv.Dialector:
 		return "sqlite"
 	case *postgresdrv.Dialector:

@@ -25,14 +25,21 @@ import (
 
 // loadUsers is THE user read shape (spec: every read path preloads Claims and
 // Roles.Claims — ComputeEffectiveClaims downstream depends on it). All orders
-// pinned to rowid = legacy append order.
+// pinned to insertion order (see roworder.go).
 func (g *GormDatabase) loadUsers(tx *gorm.DB) ([]models.User, error) {
 	var users []models.User
+
+	// The joined rows are ordered by the table they come from, not by users:
+	// Preload("Roles.Claims") runs its query against claims.
+	order := func(path string) func(*gorm.DB) *gorm.DB {
+		return func(db *gorm.DB) *gorm.DB { return db.Order(preloadOrder(db, path)) }
+	}
+
 	err := tx.
-		Preload("Claims", func(db *gorm.DB) *gorm.DB { return db.Order("rowid") }).
-		Preload("Roles", func(db *gorm.DB) *gorm.DB { return db.Order("rowid") }).
-		Preload("Roles.Claims", func(db *gorm.DB) *gorm.DB { return db.Order("rowid") }).
-		Order("rowid").Find(&users).Error
+		Preload("Claims", order("Claims")).
+		Preload("Roles", order("Roles")).
+		Preload("Roles.Claims", order("Roles.Claims")).
+		Order(insertionOrder(tx, "users")).Find(&users).Error
 	if err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}

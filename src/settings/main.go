@@ -12,12 +12,15 @@ package settings
 // Lookup precedence in the override resolver:
 //
 //	host node:            managed > local
-//	orchestrator node:    managed > orchestrator-scope > local
+//	orchestrator node:    managed > node-scope > orchestrator-scope > local
 //
 // orchestrator-scope covers setting_values rows with scope "orchestrator"
 // (the service's own overrides); host-scope rows never touch the orchestrator
-// process. Below the DB layers sit env > flag > config file > catalog
-// default (handled by the untouched GetKey fallback).
+// process. node-scope is the value addressed to *this* replica by machine id
+// ("node:<machine-id>") — see node_identity.go for why a per-replica key must
+// not live in the shared orchestrator scope. Below the DB layers sit env >
+// flag > config file > catalog default (handled by the untouched GetKey
+// fallback).
 //
 // The orchestrator is the source of truth for host-scoped values
 // (setting_values scope "hosts" / "host:<id>"); hosts receive full bundles
@@ -34,6 +37,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
@@ -41,12 +45,14 @@ import (
 const (
 	SourceManaged      = "managed_db"
 	SourceOrchestrator = "orchestrator_db"
-	SourceHosts        = "hosts_db"
-	SourceHost         = "host_db"
-	SourceLocal        = "local_db"
-	SourceEnv          = "env"
-	SourceConfigFile   = "config_file"
-	SourceDefault      = "default"
+	// SourceNode marks a value addressed to this replica alone by machine id.
+	SourceNode       = "node_db"
+	SourceHosts      = "hosts_db"
+	SourceHost       = "host_db"
+	SourceLocal      = "local_db"
+	SourceEnv        = "env"
+	SourceConfigFile = "config_file"
+	SourceDefault    = "default"
 )
 
 const maxSettingValueBytes = 4096
@@ -64,6 +70,13 @@ type Service struct {
 
 	isOrchestrator bool
 	isHost         bool
+
+	// nodeScope is the scope this process reads its own per-replica values
+	// from ("node:<machine-id>"), empty on a host or on a machine that cannot
+	// be identified. Computed once at init: the machine does not change under a
+	// running process, and reading it per lookup would shell out on every
+	// GetKey.
+	nodeScope string
 }
 
 var globalService *Service
@@ -90,6 +103,12 @@ func InitService(ctx basecontext.ApiContext) (*Service, error) {
 	}
 	if err := svc.load(); err != nil {
 		return nil, err
+	}
+	// Only a replica addresses itself by machine: a host's settings rows live in
+	// its own database, so a node scope there would be a scope nobody else can
+	// ever write and nothing gains from it.
+	if svc.isOrchestrator {
+		svc.nodeScope = nodeScopeFor()
 	}
 	config.SetOverrideResolver(svc.lookup)
 	globalService = svc
@@ -175,6 +194,13 @@ func (s *Service) lookup(key string) (string, bool) {
 		return v, true
 	}
 	if s.isOrchestrator {
+		// This replica's own value beats the shared one: the whole point of the
+		// node scope is that two replicas attached to one database can disagree.
+		if s.nodeScope != "" {
+			if v, ok := s.values[s.nodeScope][k]; ok {
+				return v, true
+			}
+		}
 		if v, ok := s.values[models.SettingScopeOrchestrator][k]; ok {
 			return v, true
 		}
@@ -257,6 +283,15 @@ func checkScopeAllowed(def *models.SettingDefinition, scope string) error {
 		if def.AppliesTo == models.SettingAppliesToOrchestrator {
 			return fmt.Errorf("setting %s applies to the orchestrator only", def.Key)
 		}
+	case models.IsNodeSettingScope(scope):
+		// A replica's own row can only carry keys that mean something on a
+		// replica. A host-scoped key stored here would be read by nobody — the
+		// hosts pull their values from the host scopes, not from a peer
+		// replica — so it would sit in the table looking like it had taken
+		// effect.
+		if def.AppliesTo == models.SettingAppliesToHost {
+			return fmt.Errorf("setting %s applies to hosts only", def.Key)
+		}
 	default:
 		return fmt.Errorf("invalid settings scope %q", scope)
 	}
@@ -282,6 +317,25 @@ func (s *Service) SetScopeValue(scope, key, value, updatedBy string) (int64, err
 	if err != nil {
 		return 0, err
 	}
+
+	// The replica identity has exactly one home. Accepting it in the shared
+	// scopes too would store a value that reads as configured and does nothing
+	// — or worse, would be honoured by every replica attached to this database.
+	if IsNodeIdentityKey(k) && !models.IsNodeSettingScope(scope) {
+		return 0, fmt.Errorf("setting %s is per-replica: write it to scope %s<machine-id>; this machine's id is %q",
+			def.Key, models.SettingScopeNodePrefix, helpers.MachineID())
+	}
+
+	renamed := false
+	previousIdentity := ""
+	if IsNodeIdentityKey(k) {
+		previous, err := s.guardNodeIdentityWrite(scope, normalized)
+		if err != nil {
+			return 0, err
+		}
+		previousIdentity, renamed = previous, true
+	}
+
 	revision, err := s.st.upsertValue(&models.SettingValue{
 		Scope: scope, Key: k, Value: normalized, UpdatedBy: updatedBy,
 	})
@@ -300,6 +354,16 @@ func (s *Service) SetScopeValue(scope, key, value, updatedBy string) (int64, err
 	if scope != models.SettingScopeOrchestrator {
 		s.markPendingForScope(scope)
 	}
+
+	// Adopted only after the row is durable: a process running under an
+	// identity the database does not record would stamp work nobody can
+	// attribute to it after a restart.
+	if renamed {
+		if err := applyNodeIdentity(previousIdentity, normalized); err != nil {
+			return revision, err
+		}
+	}
+
 	return revision, nil
 }
 
@@ -307,6 +371,15 @@ func (s *Service) SetScopeValue(scope, key, value, updatedBy string) (int64, err
 func (s *Service) DeleteScopeValue(scope, key string) (bool, error) {
 	scope = strings.TrimSpace(scope)
 	k := normKey(key)
+
+	renamed := IsNodeIdentityKey(k) && models.IsNodeSettingScope(scope)
+	previousIdentity := ""
+	if renamed {
+		s.mu.RLock()
+		previousIdentity = s.values[scope][k]
+		s.mu.RUnlock()
+	}
+
 	existed, revision, err := s.st.deleteValue(scope, k)
 	if err != nil {
 		return false, err
@@ -322,6 +395,13 @@ func (s *Service) DeleteScopeValue(scope, key string) (bool, error) {
 	s.mu.Unlock()
 	if scope != models.SettingScopeOrchestrator {
 		s.markPendingForScope(scope)
+	}
+	// "" means the identity falls back to what this machine derives for itself;
+	// the hook owns that chain, this package does not know it exists.
+	if renamed {
+		if err := applyNodeIdentity(previousIdentity, ""); err != nil {
+			return true, err
+		}
 	}
 	return true, nil
 }

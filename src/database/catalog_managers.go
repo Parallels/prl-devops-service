@@ -27,7 +27,7 @@ import (
 
 func (g *GormDatabase) GetCatalogManagers() ([]models.CatalogManager, error) {
 	var rows []models.CatalogManager
-	if err := g.gormDB.Table("catalog_managers").Order("rowid").Find(&rows).Error; err != nil {
+	if err := g.gormDB.Table("catalog_managers").Order(insertionOrder(g.gormDB, "catalog_managers")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return rows, nil
@@ -35,7 +35,7 @@ func (g *GormDatabase) GetCatalogManagers() ([]models.CatalogManager, error) {
 
 func (g *GormDatabase) GetCatalogManager(id string) (*models.CatalogManager, error) {
 	var rows []models.CatalogManager
-	if err := g.gormDB.Table("catalog_managers").Order("rowid").Find(&rows).Error; err != nil {
+	if err := g.gormDB.Table("catalog_managers").Order(insertionOrder(g.gormDB, "catalog_managers")).Find(&rows).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	for i := range rows {

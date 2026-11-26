@@ -16,15 +16,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// loadClaims returns claims in insertion order with Users ordered by rowid
-// (same pinning rationale as loadRoles).
+// loadClaims returns claims in insertion order with Users likewise ordered
+// (same pinning rationale as loadRoles; see roworder.go).
 func (g *GormDatabase) loadClaims(tx *gorm.DB, preloads ...string) ([]models.Claim, error) {
 	var claims []models.Claim
+
+	order := func(path string) func(*gorm.DB) *gorm.DB {
+		return func(db *gorm.DB) *gorm.DB { return db.Order(preloadOrder(db, path)) }
+	}
+
 	q := tx
 	for _, p := range preloads {
-		q = q.Preload(p, func(db *gorm.DB) *gorm.DB { return db.Order("rowid") })
+		q = q.Preload(p, order(p))
 	}
-	if err := q.Order("rowid").Find(&claims).Error; err != nil {
+	if err := q.Order(insertionOrder(tx, "claims")).Find(&claims).Error; err != nil {
 		return nil, mapGormError(err, nil, nil)
 	}
 	return claims, nil

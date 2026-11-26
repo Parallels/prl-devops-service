@@ -8,6 +8,10 @@ package legacy_migrator
 // themselves (GORM resolves both), never hand-typed.
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/data/models"
@@ -28,16 +32,121 @@ type CollectionSpec struct {
 // ordered plan needs the relational specs in scope); scalarPlan() stays here
 // as the scalar half, reused by the relational plan and its tests.
 
-func upsertAll[T any](ctx basecontext.ApiContext, tx *gorm.DB, rows []T, pk string, chunk int) (int64, error) {
+func upsertAll[T any](ctx basecontext.ApiContext, name string, tx *gorm.DB, rows []T, pk string, chunk int) (int64, error) {
 	if len(rows) == 0 {
 		return 0, nil
 	}
+
+	rows, dropped := dedupeByPK(rows, pk)
+	if len(dropped) > 0 {
+		// Worth a warning rather than silence: the legacy store held two records
+		// that the relational one cannot, and which copy survived was previously
+		// decided by whichever engine happened to be running.
+		ctx.LogWarnf("[Migration] %s: %d row(s) share a primary key with an earlier row, first kept (e.g. %s)",
+			name, len(dropped), strings.Join(firstKeys(dropped, 5), ", "))
+	}
+
 	res := tx.Omit(clause.Associations). // edges are ONLY the edgeSpecs' business: no implicit M2M full-saves from parent Creates (task 04)
 						Clauses(clause.OnConflict{Columns: []clause.Column{{Name: pk}}, UpdateAll: true}).
 						CreateInBatches(&rows, chunk) // AC-2: re-run = same PK ⇒ update, never duplicate
 	// Caveat: RowsAffected ≠ len(rows) on MySQL-family update-in-place;
 	// SQLite/Postgres semantics used here report per-statement affected rows.
 	return res.RowsAffected, res.Error
+}
+
+// dedupeByPK collapses rows that would land on the same primary key within one
+// batch, keeping the first — the rule the typed rows() functions already follow
+// ("canonical first; first-seen order = deterministic file order").
+//
+// This is the backstop for the collections whose rows() has no dedupe to speak
+// of: vmRows flattens every host's embedded VM slice, and a VM stored under two
+// hosts arrives twice. SQLite's ON CONFLICT DO UPDATE lets the later copy
+// overwrite the earlier one and nobody notices; PostgreSQL rejects the entire
+// statement — "ON CONFLICT DO UPDATE command cannot affect row a second time"
+// (SQLSTATE 21000) — which aborts the migration and rolls the whole install
+// back. Both engines were looking at the same data; only one of them admitted it.
+//
+// Rows whose key cannot be read (not a struct, no primary key tagged) are
+// passed through untouched: guessing at a key would drop data, and an
+// un-collapsible batch is the engine's problem to report, not this one's.
+func dedupeByPK[T any](rows []T, pk string) ([]T, []string) {
+	keyOf, ok := primaryKeyOf[T](pk)
+	if !ok {
+		return rows, nil
+	}
+
+	seen := make(map[string]struct{}, len(rows))
+	out := make([]T, 0, len(rows))
+	var dropped []string
+
+	for _, row := range rows {
+		key := keyOf(row)
+		if _, dup := seen[key]; dup {
+			dropped = append(dropped, key)
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, row)
+	}
+
+	return out, dropped
+}
+
+// primaryKeyOf resolves the field backing the pk column once, per instantiation
+// of the generic, and returns an accessor for it.
+func primaryKeyOf[T any](pk string) (func(T) string, bool) {
+	t := reflect.TypeOf(new(T)).Elem()
+	if t.Kind() != reflect.Struct {
+		return nil, false
+	}
+
+	idx, ok := pkFieldIndex(t, pk)
+	if !ok {
+		return nil, false
+	}
+
+	return func(row T) string {
+		v := reflect.ValueOf(row)
+		for _, step := range idx {
+			v = v.Field(step)
+		}
+		if !v.IsValid() {
+			return ""
+		}
+		return fmt.Sprintf("%v", v.Interface())
+	}, true
+}
+
+func pkFieldIndex(t reflect.Type, pk string) ([]int, bool) {
+	// The gorm tag is authoritative — these models declare `gorm:"primaryKey"`.
+	for i := 0; i < t.NumField(); i++ {
+		if strings.Contains(t.Field(i).Tag.Get("gorm"), "primaryKey") {
+			return []int{i}, true
+		}
+	}
+
+	// Otherwise match the column name against the field. Underscores are dropped
+	// on both sides: the column is `host_id` and the field HostID, and an
+	// acronym-aware snake_case is more machinery than this comparison needs.
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if strings.EqualFold(collapse(f.Name), collapse(pk)) {
+			return []int{i}, true
+		}
+	}
+
+	return nil, false
+}
+
+func collapse(s string) string {
+	return strings.ReplaceAll(strings.ToLower(s), "_", "")
+}
+
+func firstKeys(keys []string, limit int) []string {
+	if len(keys) <= limit {
+		return keys
+	}
+	return keys[:limit]
 }
 
 func scalarSpec[T any](name string, pk string,
@@ -48,7 +157,7 @@ func scalarSpec[T any](name string, pk string,
 		Name:        name,
 		LegacyCount: func(d *data.Data) int { return len(rows(d)) },
 		Migrate: func(ctx basecontext.ApiContext, tx *gorm.DB, d *data.Data, chunk int) (int64, error) {
-			return upsertAll(ctx, tx, rows(d), pk, chunk)
+			return upsertAll(ctx, name, tx, rows(d), pk, chunk)
 		},
 		Validate: func(db *gorm.DB, d *data.Data) (int64, int64, error) {
 			a, err := count(db)
@@ -76,7 +185,7 @@ func pointerSpec[T any](name string, pk string,
 		Name:        name,
 		LegacyCount: func(d *data.Data) int { return len(rows(d)) },
 		Migrate: func(ctx basecontext.ApiContext, tx *gorm.DB, d *data.Data, chunk int) (int64, error) {
-			return upsertAll(ctx, tx, rows(d), pk, chunk)
+			return upsertAll(ctx, name, tx, rows(d), pk, chunk)
 		},
 		Validate: func(db *gorm.DB, d *data.Data) (int64, int64, error) {
 			a, err := count(db)

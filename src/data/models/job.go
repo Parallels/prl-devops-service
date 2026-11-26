@@ -3,8 +3,13 @@ package models
 import "github.com/Parallels/prl-devops-service/constants"
 
 type Job struct {
-	ID                 string             `json:"id" gorm:"primaryKey"`
-	Owner              string             `json:"owner" gorm:"index"`
+	ID    string `json:"id" gorm:"primaryKey"`
+	Owner string `json:"owner" gorm:"index"`
+	// OwnerNode is the replica that is running this job, not the user it belongs
+	// to. With several replicas on one database it is what lets a restart
+	// recover its own work without failing somebody else's in flight — and
+	// therefore without stranding the capacity those creates reserved.
+	OwnerNode          string             `json:"owner_node,omitempty" gorm:"index"`
 	OwnerName          string             `json:"owner_name,omitempty"`
 	OwnerEmail         string             `json:"owner_email,omitempty"`
 	State              constants.JobState `json:"state"`
