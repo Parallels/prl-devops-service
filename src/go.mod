@@ -25,7 +25,7 @@ require (
 	github.com/swaggo/swag v1.16.3
 	golang.org/x/crypto v0.58.0
 	golang.org/x/sync v0.25.0
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 	golang.org/x/text v0.44.0
 	gopkg.in/yaml.v3 v3.0.1
 )
