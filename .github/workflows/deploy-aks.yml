@@ -85,7 +85,7 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v5
 
       - name: Install kubelogin
         run: |
