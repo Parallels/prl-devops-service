@@ -63,7 +63,7 @@ jobs:
       AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && secrets.STG_AKS_CLUSTER_NAME || secrets.PRD_AKS_CLUSTER_NAME }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
